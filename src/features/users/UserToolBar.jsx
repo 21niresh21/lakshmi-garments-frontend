@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   Box,
   IconButton,
@@ -10,13 +11,25 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import InvoiceFilter from "./InvoiceFilter";
+import UserFilter from "./UserFilter"; // Assuming you have this UserFilter component
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import UserCreateModal from "./UserCreateModal";
 
-function InvoiceToolBar({ totalRows, handleFilterChange, filter }) {
-  const [anchorEl, setAnchorEl] = React.useState(null);
+function UserToolBar({
+  totalRows,
+  handleFilterChange,
+  filter,
+  rolesList,
+  handleUserCreate,
+}) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleModalOpen = () => {
+    setModalOpen(true);
+  };
 
   const handleClose = () => {
     setAnchorEl(null);
@@ -32,6 +45,7 @@ function InvoiceToolBar({ totalRows, handleFilterChange, filter }) {
       search: e.target.value,
     }));
   };
+
   return (
     <Box
       sx={{
@@ -43,14 +57,15 @@ function InvoiceToolBar({ totalRows, handleFilterChange, filter }) {
       }}
     >
       <Typography component="div" variant="h6" sx={{ fontWeight: 600 }}>
-        {"Invoices " + "(" + totalRows + ")"}
+        {`Users (${totalRows ?? 0})`}
       </Typography>
+
       <Stack gap={1} direction={"row"}>
         <TextField
           size="small"
           value={filter.search}
           onChange={handleSearchChange}
-          placeholder="Search invoice number"
+          placeholder="Search by name"
           slotProps={{
             input: {
               startAdornment: (
@@ -70,21 +85,33 @@ function InvoiceToolBar({ totalRows, handleFilterChange, filter }) {
             },
           }}
         />
-        <Tooltip title="Filter Invoice">
-          <IconButton onClick={openFilter} disabled={!totalRows}>
+        {/* <Tooltip title="Filter Users">
+          <IconButton onClick={openFilter}>
             <FilterListIcon />
           </IconButton>
-        </Tooltip>
+        </Tooltip> */}
 
-        <InvoiceFilter
+        {/* <UserFilter
           anchorEl={anchorEl}
           handleClose={handleClose}
           onFilterChange={handleFilterChange}
           filter={filter}
-        />
+          roles={rolesList}
+        /> */}
+        <Tooltip title="Add Users">
+          <IconButton onClick={handleModalOpen}>
+            <PersonAddIcon />
+          </IconButton>
+        </Tooltip>
       </Stack>
+      <UserCreateModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        roles={rolesList}
+        onSubmit={handleUserCreate}
+      />
     </Box>
   );
 }
 
-export default InvoiceToolBar;
+export default UserToolBar;

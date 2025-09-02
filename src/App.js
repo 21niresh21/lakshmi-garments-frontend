@@ -10,7 +10,10 @@ import Production from "./pages/Production";
 import StreamlitEmbed from "./components/StreamlitEnbed";
 import Login from "./pages/Login";
 import Batch from "./pages/Batch";
-import Users from "./features/users/Users";
+import Users from "./pages/Users";
+import MasterData from "./pages/MasterDataPage";
+import ZoomableLineChart from "./features/analytics/ZoomableLineChart";
+import Analytics from "./pages/Analytics";
 
 // Function to check authentication from localStorage
 const getAuthStatus = () => !!localStorage.getItem("user");
@@ -54,16 +57,86 @@ function App() {
       <MainLayout>
         <ContentLayout>
           <Routes>
-            <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
-            <Route path="/stock-control" element={<ProtectedRoute><StockControl /></ProtectedRoute>} />
-            <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
-            <Route path="/invoice" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
-            <Route path="/invoice/:id" element={<ProtectedRoute><InvoiceDetail /></ProtectedRoute>} />
-            <Route path="/production" element={<ProtectedRoute><Production /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><StreamlitEmbed /></ProtectedRoute>} />
-            <Route path="/batches" element={<ProtectedRoute><Batch/></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute><Users/></ProtectedRoute>} />
-            <Route path="*" element={<Navigate to={isAuthenticated ? "/stock" : "/login"} />} />
+            <Route
+              path="/login"
+              element={<Login setIsAuthenticated={setIsAuthenticated} />}
+            />
+            <Route
+              path="/stock-control"
+              element={
+                <ProtectedRoute>
+                  <StockControl />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stock"
+              element={
+                <ProtectedRoute>
+                  <Stock />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/invoice"
+              element={
+                <ProtectedRoute>
+                  <Invoice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/invoice/:id"
+              element={
+                <ProtectedRoute>
+                  <InvoiceDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/production"
+              element={
+                <ProtectedRoute>
+                  <Production />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Analytics/>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/batches"
+              element={
+                <ProtectedRoute>
+                  <Batch />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute>
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/data-management"
+              element={
+                <ProtectedRoute>
+                  <MasterData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="*"
+              element={<Navigate to={isAuthenticated ? "/stock" : "/login"} />}
+            />
           </Routes>
         </ContentLayout>
       </MainLayout>

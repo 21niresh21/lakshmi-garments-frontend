@@ -9,3 +9,16 @@ export const fetchSubCategories = async () => {
     console.error("error fetching sub categories", error);
   }
 };
+
+export const addSubCategory = async (subCategoryData) => {
+  try {
+    const response = await axiosInstance.post(
+      "/sub-categories",
+      subCategoryData
+    );
+    console.log(response.data);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};

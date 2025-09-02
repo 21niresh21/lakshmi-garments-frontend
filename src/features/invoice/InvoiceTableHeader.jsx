@@ -23,7 +23,7 @@ function InvoiceTableHeader({ sort, setSort }) {
       <TableRow>
         {HEADERS.map((item) =>
           item.sort ? (
-            <TableCell>
+            <TableCell key={item.field}>
               <TableSortLabel
                 active={sort && sort.field === item.field}
                 onClick={() => handleSort(item.field)}
@@ -33,7 +33,7 @@ function InvoiceTableHeader({ sort, setSort }) {
               </TableSortLabel>
             </TableCell>
           ) : (
-            <TableCell>{item.label}</TableCell>
+            <TableCell key={item.field}>{item.label}</TableCell>
           )
         )}
       </TableRow>

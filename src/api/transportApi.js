@@ -9,3 +9,13 @@ export const fetchTransports = async () => {
     console.error("error fetching transports", error);
   }
 };
+
+export const addTransport = async (transportData) => {
+  try {
+    const response = await axiosInstance.post("/transports", transportData);
+    console.log(response.data);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};

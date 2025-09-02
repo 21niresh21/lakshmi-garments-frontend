@@ -12,3 +12,18 @@ export function formatDateToVerbose(dateString) {
   // Use toLocaleDateString to format the date
   return date.toLocaleDateString("en-US", options);
 }
+
+/**
+ * Converts an ISO date string (e.g., "2025-07-10") to a JavaScript Date object.
+ * Supports format: YYYY-MM-DD
+ */
+export function parseISO(dateString) {
+  if (typeof dateString !== "string") {
+    throw new Error("Invalid date string");
+  }
+
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  // JavaScript Date: months are 0-based (Jan = 0)
+  return new Date(year, month - 1, day);
+}

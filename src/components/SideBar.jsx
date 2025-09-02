@@ -19,11 +19,12 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import InventoryOutlinedIcon from "@mui/icons-material/InventoryOutlined";
-import { Link, NavLink } from "react-router";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 import InsightsIcon from "@mui/icons-material/Insights";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
+import SettingsIcon from '@mui/icons-material/Settings';
+import { Link, useLocation } from "react-router";
 
 const drawerWidth = 240;
 
@@ -78,7 +79,13 @@ const SIDEBAR_ITEMS = [
     link: "/dashboard",
   },
   { isSubHeader: true, label: "Analytics" },
-  { icon: <InsightsIcon />, label: "Analytics", last: true, index: 2, link: '/analytics' },
+  {
+    icon: <InsightsIcon />,
+    label: "Analytics",
+    last: true,
+    index: 2,
+    link: "/analytics",
+  },
   { isSubHeader: true, label: "User Management" },
   {
     icon: <PeopleIcon />,
@@ -94,13 +101,13 @@ const SIDEBAR_ITEMS = [
         <span className="material-symbols-outlined">package_2</span>
       </Icon>
     ),
-    label: "Stock",
+    label: "Inventory",
     index: 4,
     link: "/stock",
   },
   {
     icon: <InventoryOutlinedIcon />,
-    label: "Stock Control",
+    label: "Add Inventory",
     index: 5,
     link: "/stock-control",
   },
@@ -109,6 +116,7 @@ const SIDEBAR_ITEMS = [
     label: "Invoice",
     index: 6,
     link: "/invoice",
+    last  : true,
   },
   { isSubHeader: true, label: "Production" },
   {
@@ -122,11 +130,26 @@ const SIDEBAR_ITEMS = [
     label: "Batches",
     index: 8,
     link: "/batches",
+    last: true,
   },
+  { isSubHeader: true, label: "Master Data" },
+  {
+    icon: <SettingsIcon />,
+    label: "Data Management",
+    index: 9,
+    link: "/data-management",
+  }
 ];
 
 function SideBar() {
-  const [selectedIndex, setSelectedIndex] = useState(1);
+  const location = useLocation();
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    // Find the sidebar item whose link matches the current path
+    const found = SIDEBAR_ITEMS.find(
+      (item) => item.link && location.pathname === item.link
+    );
+    return found?.index || 1;
+  });
 
   const handleListItemClick = (event, index) => {
     setSelectedIndex(index);

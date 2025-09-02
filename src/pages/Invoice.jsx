@@ -2,17 +2,21 @@ import React, { useEffect, useState } from "react";
 import InvoiceTableHeader from "../features/invoice/InvoiceTableHeader";
 import { fetchInvoices, updateInvoice } from "../api/invoiceApi";
 import {
+  Alert,
+  Box,
   Divider,
   InputBase,
   MenuItem,
   Paper,
   Select,
+  Snackbar,
   styled,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableRow,
+  Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DoneIcon from "@mui/icons-material/Done";
@@ -21,6 +25,7 @@ import InvoiceToolBar from "../features/invoice/InvoiceToolBar";
 import { formatDateToVerbose } from "../utils/dateUtils";
 import { useNavigate } from "react-router";
 import InvoiceTablePagination from "../features/invoice/InvoiceTablePagination";
+import InboxIcon from "@mui/icons-material/Inbox";
 
 // Custom input style
 const BootstrapInput = styled(InputBase)(({ theme }) => ({
@@ -62,24 +67,39 @@ function Invoice() {
     receivedStartDate: "",
     receivedEndDate: new Date().toISOString().slice(0, 10),
   });
+  const [networkError, setNetworkError] = useState(false);
   let navigate = useNavigate();
 
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setNetworkError(false);
+  };
+
   useEffect(() => {
-    fetchInvoices(sort.field, sort.order, filters).then((res) => {
-      console.log(res.data); // Log the full response to check the structure
-      setData(res.data || {}); // Store the entire data object in the state
+    fetchInvoices(sort.field, sort.order, filters)
+      .then((res) => {
+        console.log(res.data); // Log the full response to check the structure
+        setData(res.data || {}); // Store the entire data object in the state
 
-      // Pre-fill selectedValue state with paymentStatus of each invoice
-      const initialSelectedValue =
-        res.data &&
-        res.data.content.reduce((acc, invoice) => {
-          acc[invoice.id] = invoice.isTransportPaid ? "Paid" : "Unpaid"; // Default to empty string if no status
-          return acc;
-        }, {});
-      console.log("initial val", initialSelectedValue);
+        // Pre-fill selectedValue state with paymentStatus of each invoice
+        const initialSelectedValue =
+          res.data &&
+          res.data.content.reduce((acc, invoice) => {
+            acc[invoice.id] = invoice.isTransportPaid ? "Paid" : "Unpaid"; // Default to empty string if no status
+            return acc;
+          }, {});
+        console.log("initial val", initialSelectedValue);
 
-      setSelectedValue(initialSelectedValue); // Update the selectedValue state with pre-filled values
-    });
+        setSelectedValue(initialSelectedValue); // Update the selectedValue state with pre-filled values
+      })
+      .catch((error) => {
+        if (error.code === "ERR_NETWORK") {
+          setNetworkError(true);
+          return;
+        }
+      });
   }, [filters, sort, page, rowsPerPage]);
 
   // Handle select change
@@ -138,7 +158,7 @@ function Invoice() {
   };
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} sx={{ mt: 2 }}>
       <InvoiceToolBar
         totalRows={data.content ? data.content.length : 0}
         handleFilterChange={setFilters}
@@ -146,13 +166,16 @@ function Invoice() {
       />
       <Divider />
       <Table>
-        <InvoiceTableHeader sort={sort} setSort={setSort} />
+        {data.content && data.content.length > 0 && (
+          <InvoiceTableHeader sort={sort} setSort={setSort} />
+        )}
+
         <TableBody>
-          {data.content &&
+          {data.content && data.content.length > 0 ? (
             data.content.map((invoice) => (
               <TableRow
                 key={invoice.id}
-                onClick={(event) => handleInvoiceOpen(invoice.id)} // Row click event
+                onClick={(event) => handleInvoiceOpen(invoice.id)}
                 sx={{
                   cursor: "pointer",
                   "&:hover": { backgroundColor: "#f6f6f6" },
@@ -173,37 +196,70 @@ function Invoice() {
                   <Select
                     sx={{ minWidth: 120 }}
                     size="small"
-                    value={selectedValue[invoice.id] || ""} // Value should be linked to state
-                    onChange={(event) => handleSelectChange(invoice.id, event)} // Handle change
+                    value={selectedValue[invoice.id] || ""}
+                    onChange={(event) => handleSelectChange(invoice.id, event)}
                     input={<BootstrapInput />}
                     IconComponent={ExpandMoreIcon}
                     renderValue={renderValueWithIcon}
                   >
                     <MenuItem
                       value="Paid"
-                      onClick={(event) => event.stopPropagation()} // Prevent propagation on menu item click
+                      onClick={(event) => event.stopPropagation()}
                     >
                       Paid
                     </MenuItem>
                     <MenuItem
                       value="Unpaid"
-                      onClick={(event) => event.stopPropagation()} // Prevent propagation on menu item click
+                      onClick={(event) => event.stopPropagation()}
                     >
                       Unpaid
                     </MenuItem>
                   </Select>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={8} align="center">
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    py: 6,
+                  }}
+                >
+                  <InboxIcon sx={{ fontSize: 60, color: "grey.400", mb: 1 }} />
+                  <Typography variant="body1" color="text.secondary">
+                    No invoice data available.
+                  </Typography>
+                </Box>
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
       <InvoiceTablePagination
-        count={data ? data.totalElements : 0}
+        count={data.totalElements ? data.totalElements : 0}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
       />
+      <Snackbar
+        open={networkError}
+        autoHideDuration={6000}
+        onClose={handleClose}
+      >
+        <Alert
+          onClose={handleClose}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          Network Error. Please try again later.
+        </Alert>
+      </Snackbar>
     </TableContainer>
   );
 }

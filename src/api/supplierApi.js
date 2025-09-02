@@ -9,3 +9,13 @@ export const fetchSuppliers = async () => {
     console.error("error fetching suppliers", error);
   }
 };
+
+export const addSupplier = async (supplierData) => {
+  try {
+    const response = await axiosInstance.post("/suppliers", supplierData);
+    console.log(response.data);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};

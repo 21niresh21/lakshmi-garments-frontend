@@ -20,7 +20,7 @@ import { fetchCategorySubCategoryCount } from "../../api/inventoryApi";
 import { fetchNextSerialCode } from "../../api/idApi";
 import { createBatch } from "../../api/batchApi";
 
-function ProductionForm({ categories, subCategories }) {
+function ProductionForm({ categories, subCategories, zeroInventory }) {
   const [review, setReview] = useState(false);
   const [formData, setFormData] = useState({
     category: "",
@@ -153,6 +153,7 @@ function ProductionForm({ categories, subCategories }) {
               });
               setReview(false);
             }}
+            disabled={zeroInventory} // Disable if zero inventory
           />
           <FormControlLabel
             checked={formData.isUrgent}
@@ -160,6 +161,7 @@ function ProductionForm({ categories, subCategories }) {
             control={<Checkbox />}
             label="Urgent"
             onChange={handleUrgent}
+            disabled={zeroInventory} // Disable if zero inventory
           />
         </FormControl>
 
@@ -182,6 +184,7 @@ function ProductionForm({ categories, subCategories }) {
                   handleSubCategoryChange={handleSubCategoryChange}
                   handleQuantityChange={handleQuantityChange}
                   selectedSubCategories={selectedSubCategories} // Pass the updated list
+                  zeroInventory={zeroInventory}
                   handleRemoveSubCategory={handleRemoveSubCategory}
                 />
               );
@@ -193,6 +196,7 @@ function ProductionForm({ categories, subCategories }) {
             variant="contained"
             size="small"
             sx={{ alignSelf: "flex-start", mt: 2 }}
+            disabled={zeroInventory} // Disable if zero inventory
           >
             Add Sub Category
           </Button>

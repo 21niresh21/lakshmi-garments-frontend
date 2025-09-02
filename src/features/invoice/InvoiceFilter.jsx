@@ -1,13 +1,13 @@
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
   Checkbox,
   FormControl,
   FormControlLabel,
-  Grid,
-  IconButton,
   Popover,
+  Snackbar,
   TextField,
   Typography,
 } from "@mui/material";
@@ -21,23 +21,37 @@ import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 
 function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
   const [suppliers, setSuppliers] = useState([]);
-  const [transports, setTranports] = useState([]);
-  const [startDate, setStartDate] = React.useState();
-  const [endDate, setEndDate] = React.useState(dayjs("2022-04-17"));
-  const [receivedStartDate, setReceivedStartDate] = React.useState();
-  const [receivedEndDate, setReceivedEndDate] = React.useState(
-    dayjs("2022-04-17")
-  );
+  const [transports, setTransports] = useState([]);
+  const today = dayjs();
+
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(today);
+  const [receivedStartDate, setReceivedStartDate] = useState(null);
+  const [receivedEndDate, setReceivedEndDate] = useState(today);
+
+  const [networkError, setNetworkError] = useState(false);
+
+  const handleCloseAlert = (event, reason) => {
+    if (reason === "clickaway") return;
+    setNetworkError(false);
+  };
 
   useEffect(() => {
-    fetchSuppliers().then((res) => {
-      const supplierNames = res.data.content;
-      setSuppliers(supplierNames);
-    });
-    fetchTransports().then((res) => {
-      const transportNames = res.data.content;
-      setTranports(transportNames);
-    });
+    fetchSuppliers()
+      .then((res) => setSuppliers(res.data.content))
+      .catch((error) => {
+        if (error.code === "ERR_NETWORK") {
+          setNetworkError(true);
+        }
+      });
+
+    fetchTransports()
+      .then((res) => setTransports(res.data.content))
+      .catch((error) => {
+        if (error.code === "ERR_NETWORK") {
+          setNetworkError(true);
+        }
+      });
   }, []);
 
   const handleSupplierChange = (event, newSuppliers) => {
@@ -56,80 +70,93 @@ function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
 
   const handlePaymentStatusChange = (event) => {
     const updatedIsPaid = [...(filter.isPaid || [])];
+    const value = event.target.value === "Paid" ? true : false;
 
     if (event.target.checked) {
-      // If checkbox is checked, add the corresponding value to the filter
-      if (event.target.value === "Paid" && !updatedIsPaid.includes(true)) {
-        updatedIsPaid.push(true); // Add true if "Paid" is selected
-      } else if (
-        event.target.value === "Not Paid" &&
-        !updatedIsPaid.includes(false)
-      ) {
-        updatedIsPaid.push(false); // Add false if "Not Paid" is selected
-      }
+      if (!updatedIsPaid.includes(value)) updatedIsPaid.push(value);
     } else {
-      // If checkbox is unchecked, remove the corresponding value from the filter
-      const indexToRemove = updatedIsPaid.indexOf(
-        event.target.value === "Paid" ? true : false
-      );
-      if (indexToRemove > -1) {
-        updatedIsPaid.splice(indexToRemove, 1); // Remove the value from the array
-      }
+      const index = updatedIsPaid.indexOf(value);
+      if (index > -1) updatedIsPaid.splice(index, 1);
     }
 
-    // Update the isPaid filter with the new state
     onFilterChange((prev) => ({
       ...prev,
       isPaid: updatedIsPaid,
     }));
   };
 
-  const handleInvoiceDateChange = (dateType, newValue) => {
-    if (dateType === "startDate") {
+  const handleInvoiceDateChange = (type, newValue) => {
+    if (!newValue) return;
+    if (newValue.isAfter(today)) newValue = today;
+
+    if (type === "startDate") {
+      if (endDate && newValue.isAfter(endDate)) {
+        setEndDate(null);
+        onFilterChange((prev) => ({ ...prev, invoiceEndDate: "" }));
+      }
       setStartDate(newValue);
       onFilterChange((prev) => ({
         ...prev,
-        invoiceStartDate: newValue.format("YYYY-MM-DD"), // Format the date as YYYY-MM-DD
+        invoiceStartDate: newValue.format("YYYY-MM-DD"),
       }));
-    } else if (dateType === "endDate") {
+    } else if (type === "endDate") {
+      if (startDate && newValue.isBefore(startDate)) {
+        setStartDate(null);
+        onFilterChange((prev) => ({ ...prev, invoiceStartDate: "" }));
+      }
       setEndDate(newValue);
       onFilterChange((prev) => ({
         ...prev,
-        invoiceEndDate: newValue.format("YYYY-MM-DD"), // Format the date as YYYY-MM-DD
+        invoiceEndDate: newValue.format("YYYY-MM-DD"),
       }));
     }
   };
 
-  const handleReceivedDateChange = (dateType, newValue) => {
-    if (dateType === "startDate") {
+  const handleReceivedDateChange = (type, newValue) => {
+    if (!newValue) return;
+    if (newValue.isAfter(today)) newValue = today;
+
+    if (type === "startDate") {
+      if (receivedEndDate && newValue.isAfter(receivedEndDate)) {
+        setReceivedEndDate(null);
+        onFilterChange((prev) => ({ ...prev, receivedEndDate: "" }));
+      }
       setReceivedStartDate(newValue);
       onFilterChange((prev) => ({
         ...prev,
-        receivedStartDate: newValue.format("YYYY-MM-DD"), // Format the date as YYYY-MM-DD
+        receivedStartDate: newValue.format("YYYY-MM-DD"),
       }));
-    } else if (dateType === "endDate") {
+    } else if (type === "endDate") {
+      if (receivedStartDate && newValue.isBefore(receivedStartDate)) {
+        setReceivedStartDate(null);
+        onFilterChange((prev) => ({ ...prev, receivedStartDate: "" }));
+      }
       setReceivedEndDate(newValue);
       onFilterChange((prev) => ({
         ...prev,
-        receivedEndDate: newValue.format("YYYY-MM-DD"), // Format the date as YYYY-MM-DD
+        receivedEndDate: newValue.format("YYYY-MM-DD"),
       }));
     }
   };
 
   const clearFilter = () => {
+    setStartDate(null);
+    setEndDate(today);
+    setReceivedStartDate(null);
+    setReceivedEndDate(today);
+
     onFilterChange({
       invoiceNumber: "",
       supplierNames: [],
       isPaid: [],
-      invoiceDate: null,
-      transportName: [],
+      transportNames: [],
       search: "",
       pageNo: 0,
       pageSize: 5,
       invoiceStartDate: "",
-      invoiceEndDate: new Date().toISOString().slice(0, 10),
+      invoiceEndDate: today.format("YYYY-MM-DD"),
       receivedStartDate: "",
-      receivedEndDate: new Date().toISOString().slice(0, 10),
+      receivedEndDate: today.format("YYYY-MM-DD"),
     });
   };
 
@@ -138,10 +165,7 @@ function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
       open={Boolean(anchorEl)}
       anchorEl={anchorEl}
       onClose={handleClose}
-      anchorOrigin={{
-        vertical: "bottom",
-        horizontal: "left",
-      }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
     >
       <Box
         sx={{
@@ -155,7 +179,7 @@ function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
         }}
       >
         <Box sx={{ padding: 1, textAlign: "left" }}>
-          <Typography variant="h6" textTransform="capitalize" fontWeight={600}>
+          <Typography variant="h6" fontWeight={600}>
             FILTERS
           </Typography>
         </Box>
@@ -170,153 +194,131 @@ function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
             Clear Filters
           </Button>
         </Box>
-        <Box sx={{ padding: 1, textAlign: "center" }}>
-          <FormControl variant="outlined" fullWidth>
+
+        {/* Supplier Filter */}
+        <Box sx={{ padding: 1 }}>
+          <FormControl fullWidth>
             <Autocomplete
               size="small"
               multiple
               value={filter.supplierNames || []}
-              options={
-                suppliers ? suppliers.map((supplier) => supplier.name) : []
-              }
-              onChange={(e, newVal) => handleSupplierChange(e, newVal)}
+              options={suppliers.map((s) => s.name)}
+              onChange={handleSupplierChange}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: <>{params.InputProps.endAdornment}</>,
-                  }}
-                  label="Filter by Suppliers"
-                />
+                <TextField {...params} label="Filter by Suppliers" />
               )}
               disableCloseOnSelect
             />
           </FormControl>
         </Box>
-        <Box sx={{ padding: 1, textAlign: "center" }}>
-          <FormControl variant="outlined" fullWidth>
+
+        {/* Transport Filter */}
+        <Box sx={{ padding: 1 }}>
+          <FormControl fullWidth>
             <Autocomplete
               size="small"
               multiple
               value={filter.transportNames || []}
-              options={
-                transports ? transports.map((transport) => transport.name) : []
-              }
-              onChange={(e, newVal) => handleTransportChange(e, newVal)}
+              options={transports.map((t) => t.name)}
+              onChange={handleTransportChange}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: <>{params.InputProps.endAdornment}</>,
-                  }}
-                  label="Filter by Transports"
-                />
+                <TextField {...params} label="Filter by Transports" />
               )}
               disableCloseOnSelect
             />
           </FormControl>
         </Box>
-        <Box sx={{ padding: 1, textAlign: "center" }}>
+
+        {/* Invoice Dates */}
+        <Box sx={{ padding: 1 }}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Invoice Start Date"
               value={startDate}
-              onChange={(newValue) =>
-                handleInvoiceDateChange("startDate", newValue)
-              }
-              slotProps={{
-                textField: { fullWidth: true, size: "small" },
-                size: "small",
-              }}
+              onChange={(v) => handleInvoiceDateChange("startDate", v)}
+              maxDate={today}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
             />
           </LocalizationProvider>
         </Box>
-
-        {/* End Date Picker */}
-        <Box sx={{ padding: 1, textAlign: "center" }}>
+        <Box sx={{ padding: 1 }}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Invoice End Date"
               value={endDate}
-              onChange={(newValue) =>
-                handleInvoiceDateChange("endDate", newValue)
-              }
-              slotProps={{
-                textField: { fullWidth: true, size: "small" },
-                size: "small",
-              }}
+              onChange={(v) => handleInvoiceDateChange("endDate", v)}
+              maxDate={today}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
             />
           </LocalizationProvider>
         </Box>
 
-        <Box sx={{ padding: 1, textAlign: "center" }}>
+        {/* Received Dates */}
+        <Box sx={{ padding: 1 }}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Received Start Date"
               value={receivedStartDate}
-              onChange={(newValue) =>
-                handleReceivedDateChange("startDate", newValue)
-              }
-              slotProps={{
-                textField: { fullWidth: true, size: "small" },
-                size: "small",
-              }}
+              onChange={(v) => handleReceivedDateChange("startDate", v)}
+              maxDate={today}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
             />
           </LocalizationProvider>
         </Box>
-
-        {/* End Date Picker */}
-        <Box sx={{ padding: 1, textAlign: "center" }}>
+        <Box sx={{ padding: 1 }}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Received End Date"
               value={receivedEndDate}
-              onChange={(newValue) =>
-                handleReceivedDateChange("endDate", newValue)
-              }
-              slotProps={{
-                textField: { fullWidth: true, size: "small" },
-                size: "small",
-              }}
+              onChange={(v) => handleReceivedDateChange("endDate", v)}
+              maxDate={today}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
             />
           </LocalizationProvider>
         </Box>
 
-        <Box sx={{ padding: 1, textAlign: "center" }}>
-          <Typography sx={{ textAlign: "left", pl: 1.5 }}>
-            Payment Status
-          </Typography>
-          <FormControl
-            variant="outlined"
-            sx={{ ml: 1, mr: 1, width: 300, textAlign: "left", mt: 0.5 }}
-          >
-            <Box>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    value="Paid"
-                    checked={filter.isPaid?.includes(true) || false}
-                    onChange={handlePaymentStatusChange}
-                  />
-                }
-                label="Paid"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    value="Not Paid"
-                    checked={filter.isPaid?.includes(false) || false}
-                    onChange={handlePaymentStatusChange}
-                  />
-                }
-                label="Not Paid"
-              />
-            </Box>
+        {/* Payment Status */}
+        <Box sx={{ padding: 1 }}>
+          <Typography sx={{ pl: 1.5 }}>Payment Status</Typography>
+          <FormControl sx={{ mt : 1, ml: 1, width: 300, flexDirection : "row" }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  value="Paid"
+                  checked={filter.isPaid?.includes(true) || false}
+                  onChange={handlePaymentStatusChange}
+                />
+              }
+              label="Paid"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  value="Not Paid"
+                  checked={filter.isPaid?.includes(false) || false}
+                  onChange={handlePaymentStatusChange}
+                />
+              }
+              label="Not Paid"
+            />
           </FormControl>
         </Box>
       </Box>
+
+      <Snackbar
+        open={networkError}
+        autoHideDuration={6000}
+        onClose={handleCloseAlert}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          Network Error. Please try again later.
+        </Alert>
+      </Snackbar>
     </Popover>
   );
 }
