@@ -12,7 +12,7 @@ import {
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import { addTransport } from "../../api/transportApi";
 
-function AddTransportForm() {
+function AddTransportForm({ onRefresh}) {
   const [transportData, setTransportData] = React.useState({
     name: "",
   });
@@ -52,6 +52,7 @@ function AddTransportForm() {
         if (response) {
           // Reset form after successful addition
           setTransportData({ name: "" });
+          onRefresh()
           handleClick(); // Show success message
         }
       })

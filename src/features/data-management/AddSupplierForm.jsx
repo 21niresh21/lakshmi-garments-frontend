@@ -14,7 +14,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import PlaceIcon from "@mui/icons-material/Place";
 import { addSupplier } from "../../api/supplierApi";
 
-function AddSupplierForm() {
+function AddSupplierForm({ onRefresh }) {
   const [supplierData, setSupplierData] = React.useState({
     name: "",
     location: "",
@@ -66,6 +66,7 @@ function AddSupplierForm() {
           // Reset form after successful addition
           setSupplierData({ name: "", location: "" });
           handleClick(); // Show success message
+          onRefresh()
         }
       })
       .catch((error) => {

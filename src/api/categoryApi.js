@@ -1,11 +1,19 @@
 import axiosInstance from "../config/axiosConfig";
 
-export const fetchCategories = async () => {
+const baseUrl = "/categories";
+
+export const fetchCategories = async (search = "") => {
   try {
-    const response = await axiosInstance.get("/categories");
+    let url = baseUrl;
+    if (search.trim() !== "") {
+      url += `?search=${encodeURIComponent(search.trim())}`;
+    }
+
+    const response = await axiosInstance.get(url);
     return response;
   } catch (error) {
-    console.error("error fetching categories", error);
+    console.error("Error fetching categories:", error);
+    throw error;
   }
 };
 
@@ -14,6 +22,16 @@ export const addCategory = async (categoryData) => {
     const response = await axiosInstance.post("/categories", categoryData);
     return response;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const updateCategory = async (categoryId, updatedData) => {
+  try {
+    const response = await axiosInstance.patch(`/categories/${categoryId}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating category:", error);
     throw error;
   }
 };

@@ -1,21 +1,43 @@
 import axiosInstance from "../config/axiosConfig";
 
-export const fetchTransports = async () => {
+const baseUrl = "/transports";
+
+export const fetchTransports = async (search = "") => {
+  let url = baseUrl;
+  if (search.trim() !== "") {
+    url += `?search=${encodeURIComponent(search)}`;
+  }
+
   try {
-    const response = await axiosInstance.get("/transports");
+    const response = await axiosInstance.get(url);
     console.log(response);
     return response;
   } catch (error) {
-    console.error("error fetching transports", error);
+    console.error("Error fetching transports", error);
   }
 };
 
+
 export const addTransport = async (transportData) => {
   try {
-    const response = await axiosInstance.post("/transports", transportData);
+    const response = await axiosInstance.post(baseUrl, transportData);
     console.log(response.data);
     return response;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const updateTransport = async (transportId, updatedData) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/transports/${transportId}`,
+      updatedData
+    );
+    console.log("Transport updated:", response.data);
+    return response;
+  } catch (error) {
+    console.error("Error updating transport:", error);
     throw error;
   }
 };
