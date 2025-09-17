@@ -1,15 +1,7 @@
 import {
   Box,
-  Divider,
   InputAdornment,
-  Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -19,7 +11,7 @@ function TableSearchToolBar({
   header,
   placeholder,
   searchQuery,
-  handleSearchChange,
+  onSearchChange,
 }) {
   return (
     <Box
@@ -38,7 +30,7 @@ function TableSearchToolBar({
         <TextField
           size="small"
           value={searchQuery}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(e) => onSearchChange(e.target.value)}
           placeholder={placeholder}
           slotProps={{
             input: {

@@ -28,3 +28,13 @@ export const addSubCategory = async (subCategoryData) => {
     throw error;
   }
 };
+
+export const updateSubCategory = async (subCategoryId, updatedData) => {
+  try {
+    const response = await axiosInstance.patch(`/sub-categories/${subCategoryId}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating sub-category:", error);
+    throw error;
+  }
+};
