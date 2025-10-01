@@ -78,7 +78,7 @@ export default function SupplierTab({ showSnackbar }) {
       />
 
       <EditModal open={!!editRow} onClose={handleCloseModal}>
-        <SupplierForm initialData={editRow} onSubmit={handleUpdateSupplier} />
+        <SupplierForm initialData={editRow} onSubmit={handleUpdateSupplier} mode="edit" />
       </EditModal>
     </>
   );

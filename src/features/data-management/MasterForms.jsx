@@ -151,6 +151,21 @@ export default function MasterFormsTab() {
           </Paper>
         </Grid>
       </Grid>
+      <Grid container spacing={2} sx={{ mt: 4 }}>
+        <Grid item xs={12} md={6}>
+          <Paper elevation={3} sx={{ p: 2, height: "100%" }}>
+            <CategoryForm initialErrors={errors} onSubmit={handleAddCategory} />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper elevation={3} sx={{ p: 2, height: "100%" }}>
+            <SubCategoryForm
+              initialErrors={errors}
+              onSubmit={handleAddSubCategory}
+            />
+          </Paper>
+        </Grid>
+      </Grid>
       <SnackbarAlert
         open={snackbar.open}
         onClose={handleCloseSnackbar}

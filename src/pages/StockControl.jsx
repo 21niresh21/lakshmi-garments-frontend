@@ -32,6 +32,8 @@ import { fetchTransports } from "../api/transportApi";
 import { StyledFormControlLabel } from "../components/StyledComponents";
 import { fetchSubCategories } from "../api/subCategoryApi";
 import { createShipment } from "../api/shipmentApi";
+import AddIcon from "@mui/icons-material/Add";
+import { fetchCategories } from "../api/categoryApi";
 
 const initialBaleState = {
   baleNumber: "",
@@ -40,6 +42,8 @@ const initialBaleState = {
   price: "",
   quality: "",
   subCategoryID: "",
+  categoryID: "",
+  category: null, // Will hold the category object
   subCategory: null, // Will hold the sub-category object
 };
 
@@ -68,8 +72,52 @@ function StockControl() {
     setLrs(updatedLrs);
   };
 
+  // add function to clear errors for lr fields on change
+  const clearLrErrors = (lrIndex, baleIndex, field) => {
+    setLrErrors((prevErrors) => {
+      // Defensive copy
+      const newErrors = prevErrors.map((lrErr) => ({
+        lrNumber: lrErr?.lrNumber || "",
+        bales: (lrErr?.bales || []).map((baleErr) => ({ ...baleErr })),
+      }));
+
+      // Ensure LR exists
+      if (!newErrors[lrIndex]) {
+        // If not, add empty error objects up to lrIndex
+        while (newErrors.length <= lrIndex) {
+          newErrors.push({ lrNumber: "", bales: [] });
+        }
+      }
+
+      if (baleIndex === null || baleIndex === undefined) {
+        // LR-level error
+        newErrors[lrIndex].lrNumber = "";
+      } else {
+        // Ensure bales array exists
+        if (!newErrors[lrIndex].bales) newErrors[lrIndex].bales = [];
+        // Ensure bale error object exists
+        while (newErrors[lrIndex].bales.length <= baleIndex) {
+          newErrors[lrIndex].bales.push({
+            baleNumber: "",
+            quantity: "",
+            length: "",
+            price: "",
+            quality: "",
+            subCategoryID: "",
+            categoryID: "",
+          });
+        }
+        newErrors[lrIndex].bales[baleIndex][field] = "";
+      }
+      return newErrors;
+    });
+  };
+
   // Add a new bale to an LR
-  const addBale = (lrIndex) => {
+  const addBale = (lrIndex, isSelf) => {
+    if (isSelf === "self") {
+      generateDefaultLRNumbers();
+    }
     const updatedLrs = [...lrs];
     updatedLrs[lrIndex].bales.push({
       baleNumber: "",
@@ -78,6 +126,8 @@ function StockControl() {
       price: "",
       quality: "",
       subCategoryID: "",
+      categoryID: "",
+      category: null, // Will hold the category object
       subCategory: null, // Will hold the sub-category object
     });
     setLrs(updatedLrs);
@@ -88,32 +138,56 @@ function StockControl() {
     const updatedLrs = [...lrs];
     updatedLrs[lrIndex].bales.splice(baleIndex, 1);
     setLrs(updatedLrs);
+    setLrErrors((prevErrors) => prevErrors.filter((_, index) => index !== lrIndex));
   };
 
-  // Add a new LR
-  const addLR = () => {
-    const newLR = {
-      lrNumber: "", // New empty LR number
-      bales: [
-        {
-          baleNumber: "",
-          quantity: "",
-          length: "",
-          price: "",
-          quality: "",
-          subCategoryID: "",
-          subCategory: null, // Will hold the sub-category object
-        },
-      ], // New unique bale array with one empty bale
-    };
-
-    setLrs([...lrs, newLR]);
+  // Add a new LR to existing LRs
+  const addLR = (isSelf) => {
+    const existingLrs = [...lrs];
+    console.log(existingLrs);
+    if (isSelf === "self") {
+      const currentUtcTimeInSeconds = Math.floor(Date.now() / 1000);
+      existingLrs.push(createNewSelfLR());
+    } else {
+      existingLrs.push(createNewTransportLR());
+    }
+    setLrs(existingLrs);
+    console.log(existingLrs);
+    setLrErrors((prevErrors) => [
+      ...prevErrors,
+      {
+        lrNumber: "",
+        bales: [
+          {
+            baleNumber: "",
+            quantity: "",
+            length: "",
+            price: "",
+            quality: "",
+            subCategoryID: "",
+            categoryID: "",
+          },
+        ],
+      },
+    ]);
   };
+
+  const createNewTransportLR = () => ({
+    lrNumber: "",
+    bales: [ { ...initialBaleState } ],
+  });
+
+  const createNewSelfLR = () => ({
+    lrNumber: `LR-${Math.floor(Date.now() / 1000)}`,
+    bales: [ { ...initialBaleState } ],
+  });
 
   // Remove an LR
   const removeLR = (lrIndex) => {
     const updatedLrs = lrs.filter((_, index) => index !== lrIndex);
     setLrs(updatedLrs);
+    setLrErrors((prevErrors) => prevErrors.filter((_, index) => index !== lrIndex));
+    console.log(lrs);
   };
 
   const [formData, setFormData] = useState({
@@ -132,18 +206,40 @@ function StockControl() {
   const handleFormInputChange = (e) => {
     const { name, value } = e.target;
 
+    clearFieldError(name); // Clear error for this field
+
     setFormData((prevFormData) => ({
       ...prevFormData,
       [name]: value,
     }));
-    if (name === "isTransportSelf" && value === "self") {
-      generateDefaultLRNumbers();
+    // if transport is self generate default lr numbers based on time
+    if (name === "isTransportSelf") {
+      if (value === "self") {
+        generateDefaultLRsForSelf();
+      } else if (value === "transport") {
+        generateDefaultLRsForTransport();
+      }
     }
+  };
+
+  const generateDefaultLRsForSelf = () => {
+    const currentUtcTimeInSeconds = Math.floor(Date.now() / 1000);
+    const defaultLrs = [];
+    defaultLrs.push({
+      lrNumber: `LR-${currentUtcTimeInSeconds}`, // LR Number based on UTC time
+      bales: [initialBaleState], // Add empty bale to the LR
+    });
+    setLrs(defaultLrs);
+  };
+
+  const generateDefaultLRsForTransport = () => {
+    const defaultLrs = [createNewTransportLR()];
+    setLrs(defaultLrs);
   };
 
   const generateDefaultLRNumbers = () => {
     const currentUtcTimeInSeconds = Math.floor(Date.now() / 1000); // Get current time in seconds
-    const defaultLrs = []; // Copy current LRs
+    const defaultLrs = [...lrs]; // Copy current LRs
 
     // Add new LR with a generated LR number
     defaultLrs.push({
@@ -154,7 +250,114 @@ function StockControl() {
     setLrs(defaultLrs);
   };
 
+  const [formErrors, setFormErrors] = useState({
+    invoiceNumber: "",
+    invoiceDate: "",
+    shipmentReceivedDate: "",
+    supplierID: "",
+    transportID: "",
+    transportCost: "",
+    isTransportPaid: "",
+  });
+
+  const validateForm = () => {
+    const errors = {};
+    if (formData.invoiceNumber.trim() === "") {
+      errors.invoiceNumber = "Invoice number is required";
+    }
+    if (formData.invoiceDate === "") {
+      errors.invoiceDate = "Invoice date is required";
+    }
+    if (formData.shipmentReceivedDate === "") {
+      errors.shipmentReceivedDate = "Shipment received date is required";
+    }
+    if (formData.supplierID === "") {
+      errors.supplierID = "Supplier is required";
+    }
+    if (formData.transportID === "") {
+      errors.transportID = "Transport is required";
+    }
+    if (formData.transportCost === "") {
+      errors.transportCost = "Transport cost is required";
+      //set the formdata transportCost to 0
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        transportCost: 0,
+      }));
+    }
+    setFormErrors(errors);
+    return errors;
+  };
+
+  const validateLrs = () => {
+    const errors = lrs.map((lr, lrIndex) => {
+      const lrError = {
+        lrNumber: "",
+        bales: lr.bales.map((bale) => ({
+          baleNumber: "",
+          quantity: "",
+          length: "",
+          price: "",
+          quality: "",
+          subCategoryID: "",
+          categoryID: "",
+        })),
+      };
+
+      // LR-level validation
+      if (!lr.lrNumber || lr.lrNumber.trim() === "") {
+        lrError.lrNumber = "LR number is required";
+      }
+
+      // Bale-level validation
+      lr.bales.forEach((bale, baleIndex) => {
+        if (!bale.baleNumber || bale.baleNumber.trim() === "") {
+          lrError.bales[baleIndex].baleNumber = "Bale number is required";
+        }
+        if (!bale.quantity || bale.quantity.trim() === "") {
+          lrError.bales[baleIndex].quantity = "Quantity is required";
+        }
+        if (!bale.length || bale.length.trim() === "") {
+          lrError.bales[baleIndex].length = "Length is required";
+        }
+        if (!bale.price || bale.price.trim() === "") {
+          lrError.bales[baleIndex].price = "Price is required";
+        }
+        if (!bale.quality || bale.quality.trim() === "") {
+          lrError.bales[baleIndex].quality = "Quality is required";
+        }
+        if (bale.subCategory === null) {
+          lrError.bales[baleIndex].subCategoryID = "Sub-category is required";
+        }
+        if (bale.category === null) {
+          lrError.bales[baleIndex].categoryID = "Category is required";
+        }
+      });
+
+      return lrError;
+    });
+
+    setLrErrors(errors);
+
+    // Return true if any error exists
+    return errors.some(
+      (lrError) =>
+        lrError.lrNumber ||
+        lrError.bales.some((baleError) =>
+          Object.values(baleError).some((msg) => msg)
+        )
+    );
+  };
+
   const createShipmentOrder = () => {
+    const errors = validateForm();
+    const hasLrErrors = validateLrs();
+
+    if (Object.values(errors).length > 0 || hasLrErrors) {
+      return;
+    }
+    console.log(formData, lrs);
+    return;
     const userJson = localStorage.getItem("user");
     const user = JSON.parse(userJson);
 
@@ -181,6 +384,7 @@ function StockControl() {
 
   const handleDate = (name, value) => {
     let stringDate = dayjs(value).format("YYYY-MM-DD");
+    clearFieldError(name); // Clear error for this field
     setFormData((prevFormData) => ({
       ...prevFormData,
       [name]: stringDate,
@@ -192,8 +396,9 @@ function StockControl() {
   const [transports, setTransports] = useState([]); // State to store the transport list
   const [loading, setLoading] = useState(true); // Loading state to handle loading spinner
   const [error, setError] = useState(null); // To handle any error that may occur during the fetch
-
+  const [categories, setCategories] = useState([]); // State to store the category list
   const [open, setOpen] = useState(false);
+  const [lrErrors, setLrErrors] = useState([]);
 
   const handleClick = () => {
     setOpen(true);
@@ -207,12 +412,21 @@ function StockControl() {
     setOpen(false);
   };
 
+  const clearFieldError = (fieldName) => {
+    setFormErrors((prevErrors) => ({
+      ...prevErrors,
+      [fieldName]: "",
+    }));
+  };
+
   // Fetch suppliers when component mounts
   useEffect(() => {
     // Function to fetch data from suppliers API
 
     fetchSuppliers()
       .then((response) => {
+        console.log("suppliers", response);
+
         setSuppliers(response.data.content || []); // Update the suppliers state with the fetched data
         setLoading(false);
         console.log("Fetched suppliers:", response.data.content);
@@ -244,7 +458,38 @@ function StockControl() {
         setError("Error fetching sub categories!"); // Set an error if the API call fails
         setLoading(false);
       });
+
+    fetchCategories()
+      .then((response) => {
+        setCategories(response.data.content || []);
+        setLoading(false);
+        console.log("Fetched categories:", response.data.content);
+      })
+      .catch((error) => {
+        setError("Error fetching categories!"); // Set an error if the API call fails
+        setLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    setLrErrors((prevErrors) =>
+      lrs.map((lr, lrIndex) => ({
+        lrNumber: prevErrors[lrIndex]?.lrNumber || "",
+        bales: lr.bales.map(
+          (bale, baleIndex) =>
+            prevErrors[lrIndex]?.bales?.[baleIndex] || {
+              baleNumber: "",
+              quantity: "",
+              length: "",
+              price: "",
+              quality: "",
+              subCategoryID: "",
+              categoryID: "",
+            }
+        ),
+      }))
+    );
+  }, [lrs]);
 
   // Handling loading and error states
   if (loading) {
@@ -271,7 +516,7 @@ function StockControl() {
   return (
     <Grid container spacing={2} sx={{ height: "100%" }}>
       {/* Left Panel - 1/3 width (Invoice Details) */}
-      <Grid item xs={4}>
+      <Grid item xs={3}>
         <Paper sx={{ height: "100%", padding: 2, backgroundColor: "#f4f4f4" }}>
           {/* Left Panel Content */}
           <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 2 }}>
@@ -318,16 +563,27 @@ function StockControl() {
                 variant="outlined"
                 name="invoiceNumber"
                 onChange={handleFormInputChange}
+                helperText={formErrors.invoiceNumber}
+                error={formErrors.invoiceNumber}
               />
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DemoContainer components={["DatePicker"]}>
                   <DatePicker
                     slotProps={{
-                      textField: { size: "medium", fullWidth: true },
+                      textField: {
+                        size: "medium",
+                        fullWidth: true,
+                        helperText: formErrors.invoiceDate,
+                        error: Boolean(formErrors.invoiceDate), // Make sure error is boolean
+                      },
                     }}
                     label="Invoice Date"
                     name="invoiceDate"
-                    onChange={(value) => handleDate("invoiceDate", value)}
+                    onChange={(value) => {
+                      clearFieldError("invoiceDate");
+                      handleDate("invoiceDate", value);
+                    }}
+                    maxDate={dayjs()}
                   />
                 </DemoContainer>
               </LocalizationProvider>
@@ -335,25 +591,31 @@ function StockControl() {
                 <DemoContainer components={["DatePicker"]}>
                   <DatePicker
                     slotProps={{
-                      textField: { size: "medium", fullWidth: true },
+                      textField: {
+                        size: "medium",
+                        fullWidth: true,
+                        helperText: formErrors.shipmentReceivedDate,
+                        error: Boolean(formErrors.shipmentReceivedDate), // Make sure error is boolean
+                      },
                     }}
                     label="Shipment Received Date"
                     name="shipmentReceivedDate"
-                    onChange={(value) =>
-                      handleDate("shipmentReceivedDate", value)
-                    }
+                    onChange={(value) => {
+                      clearFieldError("shipmentReceivedDate");
+                      handleDate("shipmentReceivedDate", value);
+                    }}
+                    maxDate={dayjs()}
                   />
                 </DemoContainer>
               </LocalizationProvider>
 
               <FormControl>
-                <FormLabel>Supplier Name</FormLabel>
                 <Autocomplete
                   name="supplierID"
-                  renderInput={(params) => <TextField {...params} />}
                   options={suppliers}
                   getOptionLabel={(option) => option.name}
                   onChange={(event, newValue) => {
+                    clearFieldError("supplierID");
                     handleFormInputChange({
                       target: {
                         name: "supplierID",
@@ -363,19 +625,36 @@ function StockControl() {
                   }}
                   value={
                     suppliers.find((t) => t.id === formData.supplierID) || null
-                  } // Binding value
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Supplier Name" // This puts the label inside the box
+                      variant="outlined" // Optional: ensures the outlined style
+                      helperText={formErrors.supplierID}
+                      error={formErrors.supplierID}
+                    />
+                  )}
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Transport Name</FormLabel>
                 <Autocomplete
                   name="transportID"
-                  renderInput={(params) => <TextField {...params} />}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Transport Name" // Label inside the box
+                      variant="outlined" // (optional, for outlined style)
+                      helperText={formErrors.transportID}
+                      error={formErrors.transportID}
+                    />
+                  )}
                   options={transports}
                   getOptionLabel={(option) => option.name}
                   onChange={(event, newValue) => {
                     // Update transportID when an option is selected
+                    clearFieldError("transportID");
                     handleFormInputChange({
                       target: {
                         name: "transportID",
@@ -424,7 +703,7 @@ function StockControl() {
       </Grid>
 
       {/* Right Panel - 2/3 width (LR and Bales) */}
-      <Grid item xs={8}>
+      <Grid item xs={9}>
         <Paper sx={{ height: "100%", padding: 2 }}>
           {/* Right Panel Content */}
           <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 2 }}>
@@ -434,7 +713,7 @@ function StockControl() {
             {/* Right Panel Content */}
             <Box>
               {lrs.map((lr, lrIndex) => (
-                <Paper key={lrIndex} sx={{ padding: 2, marginBottom: 2 }}>
+                <Paper key={lr.lrNumber || lrIndex} sx={{ padding: 2, marginBottom: 2 }}>
                   <Grid container spacing={2}>
                     {/* LR Number TextField */}
                     <Grid item xs={12}>
@@ -442,36 +721,46 @@ function StockControl() {
                         label="LR Number"
                         fullWidth
                         value={lr.lrNumber}
-                        onChange={(e) =>
-                          handleInputChange(
-                            lrIndex,
-                            0,
-                            "lrNumber",
-                            e.target.value
-                          )
+                        onChange={(e) => {
+                          clearLrErrors(lrIndex, null, "lrNumber");
+                          handleInputChange(lrIndex, 0, "lrNumber", e.target.value);
+                        }}
+                        error={
+                          !!(lrErrors[lrIndex] && lrErrors[lrIndex].lrNumber)
+                        }
+                        helperText={
+                          lrErrors[lrIndex] && lrErrors[lrIndex].lrNumber
                         }
                       />
                     </Grid>
 
                     {/* Render bales within this LR */}
                     {lr.bales.map((bale, baleIndex) => (
-                      <Grid item xs={12} key={baleIndex}>
+                      <Grid item xs={12} key={bale.baleNumber || baleIndex}>
                         <Grid container spacing={2}>
-                          <Grid item xs={2.3}>
+                          <Grid item xs={2}>
                             <TextField
                               label="Bale Number"
                               value={bale.baleNumber}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  lrIndex,
-                                  baleIndex,
-                                  "baleNumber",
-                                  e.target.value
+                              onChange={(e) => {
+                                clearLrErrors(lrIndex, baleIndex, "baleNumber");
+                                handleInputChange(lrIndex, baleIndex, "baleNumber", e.target.value);
+                              }}
+                              error={
+                                !!(
+                                  lrErrors[lrIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex].baleNumber
                                 )
+                              }
+                              helperText={
+                                lrErrors[lrIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex].baleNumber
                               }
                             />
                           </Grid>
-                          <Grid item xs={1.5}>
+                          <Grid item xs={1.3}>
                             <TextField
                               label="Quantity"
                               value={bale.quantity}
@@ -481,17 +770,25 @@ function StockControl() {
                                   ""
                                 );
                               }}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  lrIndex,
-                                  baleIndex,
-                                  "quantity",
-                                  e.target.value
+                              onChange={(e) => {
+                                clearLrErrors(lrIndex, baleIndex, "quantity");
+                                handleInputChange(lrIndex, baleIndex, "quantity", e.target.value);
+                              }}
+                              error={
+                                !!(
+                                  lrErrors[lrIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex].quantity
                                 )
+                              }
+                              helperText={
+                                lrErrors[lrIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex].quantity
                               }
                             />
                           </Grid>
-                          <Grid item xs={1.5}>
+                          <Grid item xs={1.3}>
                             <TextField
                               label="Length"
                               value={bale.length}
@@ -501,17 +798,25 @@ function StockControl() {
                                   ""
                                 );
                               }}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  lrIndex,
-                                  baleIndex,
-                                  "length",
-                                  e.target.value
+                              onChange={(e) => {
+                                clearLrErrors(lrIndex, baleIndex, "length");
+                                handleInputChange(lrIndex, baleIndex, "length", e.target.value);
+                              }}
+                              error={
+                                !!(
+                                  lrErrors[lrIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex].length
                                 )
+                              }
+                              helperText={
+                                lrErrors[lrIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex].length
                               }
                             />
                           </Grid>
-                          <Grid item xs={1.5}>
+                          <Grid item xs={1.3}>
                             <TextField
                               label="Price"
                               value={bale.price}
@@ -521,46 +826,106 @@ function StockControl() {
                                   ""
                                 );
                               }}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  lrIndex,
-                                  baleIndex,
-                                  "price",
-                                  e.target.value
+                              onChange={(e) => {
+                                clearLrErrors(lrIndex, baleIndex, "price");
+                                handleInputChange(lrIndex, baleIndex, "price", e.target.value);
+                              }}
+                              error={
+                                !!(
+                                  lrErrors[lrIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex].price
                                 )
+                              }
+                              helperText={
+                                lrErrors[lrIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex].price
+                              }
+                            />
+                          </Grid>
+                          <Grid item xs={1.5}>
+                            <TextField
+                              label="Quality"
+                              value={bale.quality}
+                              onChange={(e) => {
+                                clearLrErrors(lrIndex, baleIndex, "quality");
+                                handleInputChange(lrIndex, baleIndex, "quality", e.target.value);
+                              }}
+                              error={
+                                !!(
+                                  lrErrors[lrIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex] &&
+                                  lrErrors[lrIndex].bales[baleIndex].quality
+                                )
+                              }
+                              helperText={
+                                lrErrors[lrIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex] &&
+                                lrErrors[lrIndex].bales[baleIndex].quality
                               }
                             />
                           </Grid>
                           <Grid item xs={2}>
-                            <TextField
-                              label="Quality"
-                              value={bale.quality}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  lrIndex,
-                                  baleIndex,
-                                  "quality",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </Grid>
-                          <Grid item xs={2.6}>
                             <Autocomplete
                               renderInput={(params) => (
-                                <TextField {...params} label="Sub-Category" />
+                                <TextField
+                                  {...params}
+                                  label="Sub-Category"
+                                  error={
+                                    !!(
+                                      lrErrors[lrIndex] &&
+                                      lrErrors[lrIndex].bales[baleIndex] &&
+                                      lrErrors[lrIndex].bales[baleIndex]
+                                        .subCategoryID
+                                    )
+                                  }
+                                  helperText={
+                                    lrErrors[lrIndex] &&
+                                    lrErrors[lrIndex].bales[baleIndex] &&
+                                    lrErrors[lrIndex].bales[baleIndex]
+                                      .subCategoryID
+                                  }
+                                />
                               )}
                               options={subCategories}
                               getOptionLabel={(option) => option.name}
-                              onChange={(event, newValue) =>
-                                handleInputChange(
-                                  lrIndex,
-                                  baleIndex,
-                                  "subCategory",
-                                  newValue
-                                )
-                              }
+                              onChange={(event, newValue) => {
+                                clearLrErrors(lrIndex, baleIndex, "subCategoryID");
+                                handleInputChange(lrIndex, baleIndex, "subCategory", newValue);
+                              }}
                               value={bale.subCategory} // Binding value
+                            />
+                          </Grid>
+                          <Grid item xs={2}>
+                            <Autocomplete
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  label="Category"
+                                  error={
+                                    !!(
+                                      lrErrors[lrIndex] &&
+                                      lrErrors[lrIndex].bales[baleIndex] &&
+                                      lrErrors[lrIndex].bales[baleIndex]
+                                        .categoryID
+                                    )
+                                  }
+                                  helperText={
+                                    lrErrors[lrIndex] &&
+                                    lrErrors[lrIndex].bales[baleIndex] &&
+                                    lrErrors[lrIndex].bales[baleIndex]
+                                      .categoryID
+                                  }
+                                />
+                              )}
+                              options={categories}
+                              getOptionLabel={(option) => option.name}
+                              onChange={(event, newValue) => {
+                                clearLrErrors(lrIndex, baleIndex, "categoryID");
+                                handleInputChange(lrIndex, baleIndex, "category", newValue);
+                              }}
+                              value={bale.category} // Binding value
                             />
                           </Grid>
 
@@ -581,20 +946,34 @@ function StockControl() {
                               Remove Bale
                             </Button> */}
                           </Grid>
+                          {baleIndex === lr.bales.length - 1 && (
+                            <Grid item xs={0.1}>
+                              <IconButton
+                                variant="contained"
+                                color="primary"
+                                onClick={() =>
+                                  addBale(lrIndex, formData.isTransportSelf)
+                                }
+                              >
+                                <AddIcon />
+                              </IconButton>
+                            </Grid>
+                          )}
                         </Grid>
                       </Grid>
                     ))}
-                    
 
                     {/* Add Bale Button */}
                     <Grid item xs={12}>
-                      <Button
+                      <IconButton
                         variant="contained"
                         color="primary"
-                        onClick={() => addBale(lrIndex)}
+                        onClick={() =>
+                          addBale(lrIndex, formData.isTransportSelf)
+                        }
                       >
-                        Add Bale
-                      </Button>
+                        <AddIcon />
+                      </IconButton>
                     </Grid>
 
                     {/* Remove LR Button */}
@@ -612,7 +991,11 @@ function StockControl() {
               ))}
 
               {/* Add LR Button */}
-              <Button variant="contained" color="primary" onClick={addLR}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => addLR(formData.isTransportSelf)}
+              >
                 Add LR
               </Button>
               <Button

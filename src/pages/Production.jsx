@@ -9,7 +9,7 @@ import {
   Alert,
 } from "@mui/material";
 import { fetchCategories } from "../api/categoryApi";
-import { fetchCategoryCount } from "../api/inventoryApi";
+import { fetchCategorySubcategoryCount } from "../api/inventoryApi";
 import { fetchSubCategories } from "../api/subCategoryApi";
 import InboxIcon from "@mui/icons-material/Inbox";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline"; // MUI icon
@@ -30,8 +30,10 @@ function Production() {
         setNetworkError(true);
       });
 
-    fetchCategoryCount()
+    fetchCategorySubcategoryCount()
       .then((res) => {
+        console.log(res);
+        
         setCategoryCount(res.data);
       })
       .catch(() => {
@@ -88,12 +90,12 @@ function Production() {
       ) : (
         <Box sx={{ display: "flex", columnGap: 3 }}>
           {categoryCount.map((item) => (
-            <Card sx={{ flex: 1 }} key={item.category.name}>
+            <Card sx={{ flex: 1 }} key={item.categoryName}>
               <CardContent sx={{ height: "100%" }}>
                 <Typography variant="h5" component="div">
-                  {item.category.name}
+                  {item.categoryName}
                 </Typography>
-                {item.subCategoryCountDTOs.map((subCategory) => (
+                {item.subCategories.map((subCategory) => (
                   <Typography
                     variant="body1"
                     color="text.secondary"

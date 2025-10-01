@@ -128,6 +128,7 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
     console.log(formData);
 
     checkValidData();
+    setReview(false); // Reset review state on form data change
   }, [formData]);
 
   return (
@@ -186,6 +187,7 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
                   selectedSubCategories={selectedSubCategories} // Pass the updated list
                   zeroInventory={zeroInventory}
                   handleRemoveSubCategory={handleRemoveSubCategory}
+                  isCategorySelected={formData.category}
                 />
               );
             })}
@@ -206,7 +208,7 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
               variant="contained"
               size="small"
               sx={{ alignSelf: "flex-end", mt: 2 }}
-              disabled={!validData} // Disable the Review button if not valid
+              disabled={!validData || formData.subCategories.length === 0} // Disable the Review button if not valid
             >
               {review ? "Hide Review" : "Review"}
             </Button>

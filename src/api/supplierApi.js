@@ -4,14 +4,14 @@ const baseUrl = "/suppliers";
 
 export const fetchSuppliers = async (search) => {
   let url = baseUrl;
-  if (search != "") {
+  if (search) {
     console.log(search);
 
     url += `?search=${search}`;
   }
   try {
     const response = await axiosInstance.get(url);
-    console.log(response);
+    console.log("dogs ",response);
     return response;
   } catch (error) {
     console.error("error fetching suppliers", error);

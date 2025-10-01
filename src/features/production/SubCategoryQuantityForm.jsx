@@ -22,14 +22,15 @@ function SubCategoryQuantityForm({
   selectedSubCategories, // Ensure this is the updated list of selected subcategories
   handleRemoveSubCategory, // Receive the remove function
   zeroInventory,
+  isCategorySelected,
 }) {
-  console.log("selectedSubCategories", selectedSubCategories);
+  console.log("selectedSubCategories", zeroInventory);
 
   return (
     <Box sx={{ display: "flex", columnGap: 3 }}>
       <FormControl sx={{ flex: 1 }}>
         <Autocomplete
-          disabled={zeroInventory} // Disable if zero inventory
+          disabled={zeroInventory || !isCategorySelected} // Disable if zero inventory
           options={subCategories
             .filter((subCat) => !selectedSubCategories.includes(subCat.name)) // Filter out already selected subcategories
             .map((subCategory) => subCategory.name)}
@@ -48,7 +49,8 @@ function SubCategoryQuantityForm({
             handleQuantityChange(index, parseInt(e.target.value, 10))
           }
           label="Quantity"
-          disabled={zeroInventory} // Disable if zero inventory
+          disabled={maxCount === 0 || !isCategorySelected} // Disable if zero inventory
+
         />
         <FormHelperText>
           {maxCount && `Current Stock : ${maxCount}`}

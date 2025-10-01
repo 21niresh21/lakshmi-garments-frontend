@@ -1,8 +1,8 @@
 import axiosInstance from "../config/axiosConfig";
 
-export const fetchCategoryCount = async () => {
+export const fetchCategorySubcategoryCount = async () => {
   try {
-    const response = await axiosInstance.get("/inventories/categoryCount");
+    const response = await axiosInstance.get("/inventories/categories/subcategory-counts");
     return response;
   } catch (error) {
     console.error("error fetching category count", error);
@@ -12,7 +12,7 @@ export const fetchCategoryCount = async () => {
 export const fetchCategorySubCategoryCount = async (cat, subCat) => {
   try {
     const response = await axiosInstance.get(
-      `/inventories/search?category=${cat}&subCategory=${subCat}`
+      `/inventories/count?category=${cat}&subcategory=${subCat}`
     );
     return response.data;
   } catch (error) {
