@@ -27,3 +27,16 @@ export function parseISO(dateString) {
   // JavaScript Date: months are 0-based (Jan = 0)
   return new Date(year, month - 1, day);
 }
+
+
+// formate date time to verbose
+export function formatDateTimeToVerbose(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

@@ -1,82 +1,75 @@
-import { useEffect, useState } from "react";
-import {
-  fetchSubCategories,
-  updateSubCategory,
-} from "../../api/subCategoryApi"; // Make sure these exist
+import React, { useEffect, useState } from "react";
+import { fetchSkills, updateSkill } from "../../api/skillApi"; // Ensure these exist
 import EditModal from "./EditModal";
-import SubCategoryForm from "./forms/SubCategoryForm";
+import SkillForm from "./forms/SkillForm";
 import DataTable from "./DataTable";
 import TableSearchToolBar from "./TableSearchToolBar";
 
-const subCategoryColumns = [
+const skillColumns = [
   { field: "id", headerName: "ID" },
   { field: "name", headerName: "Name" },
+  // Add more columns as needed
 ];
 
-export default function SubCategoryTab({ showSnackbar }) {
+export default function SkillTab({ showSnackbar }) {
   const [rows, setRows] = useState([]);
   const [editRow, setEditRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
 
-  const onRefresh = () => setRefresh(!refresh);
+  const onRefresh = () => setRefresh((prev) => !prev);
 
   const handleEdit = (row) => setEditRow(row);
 
   const handleCloseModal = () => setEditRow(null);
 
-  const handleUpdateSubCategory = (updatedSubCategory) => {
-    updateSubCategory(updatedSubCategory.id, {
-      name: updatedSubCategory.name,
-    })
+  const handleUpdateSkill = (updatedSkill) => {
+    updateSkill(updatedSkill.id, { name: updatedSkill.name })
       .then(() => {
         onRefresh();
-        showSnackbar("Subcategory updated successfully!", "success");
+        showSnackbar("Skill updated successfully!", "success");
         handleCloseModal();
       })
       .catch((err) => {
         if (err.response && err.response.status === 409) {
           showSnackbar(err.response.data, "error");
         } else {
-          showSnackbar(
-            "Failed to update Subcategory. An error occurred!",
-            "error"
-          );
+          showSnackbar("Failed to update skill. An error occurred!", "error");
         }
       });
   };
 
   useEffect(() => {
-    fetchSubCategories(searchQuery)
-      .then((response) => setRows(response.data))
-      .catch(() =>
-        showSnackbar(
-          "Failed to fetch subcategories. An error occurred!",
-          "error"
-        )
-      );
+    fetchSkills(searchQuery)
+      .then((response) => {
+        console.log(response.data);
+        setRows(response.data || []);
+      })
+      .catch((err) => {
+        showSnackbar("Failed to fetch skills. An error occurred!", "error");
+      });
   }, [searchQuery, refresh]);
 
   return (
     <>
       <DataTable
-        columns={subCategoryColumns}
+        columns={skillColumns}
         rows={rows}
         onEdit={handleEdit}
         toolbar={
           <TableSearchToolBar
-            header={`Subcategories (${rows.length})`}
+            header={`Skills (${rows.length})`}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            placeholder={"Subcategory Names"}
+            placeholder="Search Skill Names"
           />
         }
       />
 
       <EditModal open={!!editRow} onClose={handleCloseModal}>
-        <SubCategoryForm
+        <SkillForm
           initialData={editRow}
-          onSubmit={handleUpdateSubCategory}
+          onSubmit={handleUpdateSkill}
           mode="edit"
         />
       </EditModal>

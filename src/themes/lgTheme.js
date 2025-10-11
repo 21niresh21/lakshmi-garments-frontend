@@ -36,10 +36,10 @@ const baseTheme = createTheme({
       main: "#4caf50",
     },
 
-    // background: {
-    //   default: "#f5f5f5",
-    //   paper: "#ffffff",
-    // },
+    background: {
+      default: "#edf6f9",
+      paper: "#ffffff",
+    },
 
     // text: {
     //   primary: "#000000",

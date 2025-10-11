@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from "react";
 import ProductionForm from "../features/production/ProductionForm";
+import { Box, Card, CardContent, Chip, Typography, Alert } from "@mui/material";
 import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Typography,
-  Alert,
-} from "@mui/material";
-import { fetchCategories } from "../api/categoryApi";
-import { fetchCategorySubcategoryCount } from "../api/inventoryApi";
-import { fetchSubCategories } from "../api/subCategoryApi";
+  fetchAllCategorySubcategoryCount,
+  fetchDistinctCategories,
+} from "../api/inventoryApi";
+import { createBatch } from "../api/batchApi";
 import InboxIcon from "@mui/icons-material/Inbox";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline"; // MUI icon
 
@@ -20,33 +15,78 @@ function Production() {
   const [categoryCount, setCategoryCount] = useState([]);
   const [zeroInventory, setZeroInventory] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const moveToProduction = (formData, setFormData, setReview) => {
+    const subCategories = formData.subCategories.map((item) => ({
+      subCategoryID: item.subCategory.id,
+      quantity: item.quantity,
+    }));
+    let createBatchData = {
+      categoryID: formData.category.id,
+      serialCode: formData.serialCode,
+      isUrgent: formData.isUrgent,
+      remarks: formData.remarks,
+      subCategories,
+    };
+    createBatch(createBatchData)
+      .then((res) => {
+        if (res) {
+          setSnackbar({
+            open: true,
+            message: "Batch created successfully",
+            severity: "success",
+          });
+          setFormData({
+            category: null,
+            serialCode: "",
+            subCategories: [{ subCategory: null, quantity: "" }],
+            batchStatus: "",
+            isUrgent: false,
+            remarks: "",
+          });
+          setReview(false);
+        }
+      })
+      .catch((err) => {
+        setSnackbar({
+          open: true,
+          message: "Error creating batch",
+          severity: "error",
+        });
+      });
+  };
 
   useEffect(() => {
-    fetchCategories()
+    fetchDistinctCategories()
       .then((res) => {
-        setCategories(res.data.content);
+        setCategories(res.data);
       })
       .catch(() => {
         setNetworkError(true);
       });
 
-    fetchCategorySubcategoryCount()
+    fetchAllCategorySubcategoryCount()
       .then((res) => {
         console.log(res);
-        
+
         setCategoryCount(res.data);
       })
       .catch(() => {
         setNetworkError(true);
       });
 
-    fetchSubCategories()
-      .then((res) => {
-        setSubCategories(res.data.content);
-      })
-      .catch(() => {
-        setNetworkError(true);
-      });
+    // fetchSubCategories()
+    //   .then((res) => {
+    //     setSubCategories(res.data.content);
+    //   })
+    //   .catch(() => {
+    //     setNetworkError(true);
+    //   });
   }, []);
 
   useEffect(() => {
@@ -69,7 +109,8 @@ function Production() {
           severity="error"
           sx={{ mb: 2 }}
         >
-          Failed to load data from the server. Please check your connection or try again later.
+          Failed to load data from the server. Please check your connection or
+          try again later.
         </Alert>
       )}
 
@@ -114,6 +155,7 @@ function Production() {
         </Box>
       )}
       <ProductionForm
+        moveToProduction={moveToProduction}
         categories={categories}
         subCategories={subCategories}
         zeroInventory={zeroInventory}

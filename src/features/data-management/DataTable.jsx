@@ -1,4 +1,3 @@
-// table/DataTable.jsx
 import {
   Table,
   TableHead,
@@ -33,11 +32,13 @@ export default function DataTable({ columns, rows, onEdit, toolbar }) {
           </TableHead>
 
           <TableBody>
-            {rows.length > 0 ? (
+            {rows && rows.length > 0 ? (
               rows.map((row) => (
                 <TableRow key={row.id}>
                   {columns.map((col) => (
-                    <TableCell key={col.field}>{row[col.field]}</TableCell>
+                    <TableCell key={col.field}>
+                      {col.renderCell ? col.renderCell({ value: row[col.field], row }) : row[col.field]}
+                    </TableCell>
                   ))}
                   <TableCell>
                     <Tooltip title="Edit">

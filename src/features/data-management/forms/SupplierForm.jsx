@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -9,13 +9,21 @@ import {
 import StoreIcon from "@mui/icons-material/Store";
 import PlaceIcon from "@mui/icons-material/Place";
 
-function SupplierForm({ initialData = {}, onSubmit, mode = "add", initialErrors = {} }) {
-  const [formData, setFormData] = React.useState({
+function SupplierForm({
+  initialData = {},
+  onSubmit,
+  mode = "add",
+  initialErrors = {},
+}) {
+  const nameRef = useRef(null);
+
+  const [formData, setFormData] = useState({
     id: initialData?.id || "",
     name: initialData?.name || "",
     location: initialData?.location || "",
   });
-  const [error, setError] = React.useState({
+
+  const [error, setError] = useState({
     name: initialErrors.supplierName || "",
     location: initialErrors.supplierLocation || "",
   });
@@ -26,78 +34,93 @@ function SupplierForm({ initialData = {}, onSubmit, mode = "add", initialErrors 
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (formData.name === "" || formData.location === "") {
-      if (formData.name === "") {
-        setError((prev) => ({ ...prev, name: "Supplier name is required" }));
-      }
+    e.preventDefault(); // Prevent default form submission behavior
+    let hasError = false;
 
-      if (formData.location === "") {
-        setError((prev) => ({ ...prev, location: "Location is required" }));
-      }
-      return;
+    if (!formData.name) {
+      setError((prev) => ({ ...prev, name: "Supplier name is required" }));
+      hasError = true;
     }
-    onSubmit(formData, () => setFormData({ name: "", location: "" }));
+    if (!formData.location) {
+      setError((prev) => ({
+        ...prev,
+        location: "Location is required",
+      }));
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    onSubmit(formData, () => setFormData({ name: "", location: "", id: "" }));
   };
 
-  React.useEffect(() => {
+  const isEdit = mode === "edit";
+
+  useEffect(() => {
+    // Update errors when new props arrive
     setError({
       name: initialErrors.supplierName || "",
       location: initialErrors.supplierLocation || "",
     });
-  }, [initialErrors]);
 
-  const isEdit = mode === "edit";
+    // Autofocus name field on mount
+    if (nameRef.current && isEdit) {
+      nameRef.current.focus();
+    }
+  }, [initialErrors.supplierName, initialErrors.supplierLocation]);
 
   return (
     <>
-      <Typography variant="h6">
+      <Typography variant="h6" gutterBottom>
         {isEdit ? "Update Supplier" : "Add Supplier"}
       </Typography>
-      <TextField
-        placeholder="Add Supplier"
-        variant="outlined"
-        name="name"
-        onChange={handleChange}
-        value={formData.name}
-        slotProps={{
-          input: {
+
+      <form onSubmit={handleSubmit} onKeyDown={(e) => e.stopPropagation()}>
+        <TextField
+          placeholder="Supplier Name"
+          variant="outlined"
+          name="name"
+          inputRef={nameRef}
+          onChange={handleChange}
+          value={formData.name}
+          InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <StoreIcon />
               </InputAdornment>
             ),
-          },
-        }}
-        error={error.name}
-        helperText={error.name}
-        fullWidth
-      />
-      <TextField
-        sx={{ mt: 2 }}
-        placeholder="Location"
-        name="location"
-        onChange={handleChange}
-        value={formData.location}
-        variant="outlined"
-        slotProps={{
-          input: {
+          }}
+          error={!!error.name}
+          helperText={error.name}
+          fullWidth
+          margin="normal"
+        />
+
+        <TextField
+          placeholder="Location"
+          name="location"
+          onChange={handleChange}
+          value={formData.location}
+          variant="outlined"
+          InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <PlaceIcon />
               </InputAdornment>
             ),
-          },
-        }}
-        fullWidth
-        error={error.location}
-        helperText={error.location}
-      />
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-        <Button variant="contained" onClick={handleSubmit}>
-          {isEdit ? "Update Supplier" : "Add Supplier"}
-        </Button>
-      </Box>
+          }}
+          fullWidth
+          margin="normal"
+          error={!!error.location}
+          helperText={error.location}
+        />
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+          <Button variant="contained" type="submit">
+            {isEdit ? "Update Supplier" : "Add Supplier"}
+          </Button>
+        </Box>
+      </form>
     </>
   );
 }

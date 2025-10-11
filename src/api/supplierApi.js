@@ -5,13 +5,10 @@ const baseUrl = "/suppliers";
 export const fetchSuppliers = async (search) => {
   let url = baseUrl;
   if (search) {
-    console.log(search);
-
     url += `?search=${search}`;
   }
   try {
     const response = await axiosInstance.get(url);
-    console.log("dogs ",response);
     return response;
   } catch (error) {
     console.error("error fetching suppliers", error);
@@ -20,7 +17,7 @@ export const fetchSuppliers = async (search) => {
 
 export const addSupplier = async (supplierData) => {
   try {
-    const response = await axiosInstance.post("/suppliers", supplierData);
+    const response = await axiosInstance.post(baseUrl, supplierData);
     console.log(response.data);
     return response;
   } catch (error) {
@@ -30,7 +27,7 @@ export const addSupplier = async (supplierData) => {
 
 export const updateSupplier = async (supplierId, updatedData) => {
   try {
-    const response = await axiosInstance.patch(
+    const response = await axiosInstance.put(
       `${baseUrl}/${supplierId}`,
       updatedData
     );

@@ -10,6 +10,10 @@ import { useState } from "react";
 import { addTransport } from "../../api/transportApi";
 import { addSupplier } from "../../api/supplierApi";
 import { addCategory } from "../../api/categoryApi";
+import SkillForm from "./forms/SkillForm";
+import { addSkill } from "../../api/skillApi";
+import EmployeeForm from "./forms/EmployeeForm";
+import { addEmployee } from "../../api/employeeApi";
 export default function MasterFormsTab() {
   const [errors, setErrors] = useState({
     subCategoryName: "",
@@ -18,6 +22,8 @@ export default function MasterFormsTab() {
     supplierLocation: "",
     categoryName: "",
     categoryCode: "",
+    skillName: "",
+    skills: [],
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -45,7 +51,7 @@ export default function MasterFormsTab() {
         onSuccess();
       })
       .catch((error) => {
-        console.log(error);
+        console.log(error.response.data);
         if (error.code === "ERR_NETWORK") {
           showSnackbar("Network error. Please try again later.", "error");
           return;
@@ -119,6 +125,40 @@ export default function MasterFormsTab() {
       });
   };
 
+  const handleAddSkill = (skill, onSuccess) => {
+    addSkill(skill)
+      .then((response) => {
+        showSnackbar("Skill added successfully!", "success");
+        setErrors({ skillName: "" });
+        onSuccess();
+      })
+      .catch((error) => {
+        console.log(error);
+        if (error.code === "ERR_NETWORK") {
+          showSnackbar("Network error. Please try again later.", "error");
+          return;
+        }
+        setErrors((prev) => ({ ...prev, skillName: error.response.data }));
+      });
+  };
+
+  const handleAddEmployee = (employee, onSuccess) => {
+    addEmployee(employee)
+      .then((response) => {
+        showSnackbar("Employee added successfully!", "success");
+        setErrors({ employeeName: "" });
+        onSuccess();
+      })
+      .catch((error) => {
+        console.log(error);
+        if (error.code === "ERR_NETWORK") {
+          showSnackbar("Network error. Please try again later.", "error");
+          return;
+        }
+        setErrors((prev) => ({ ...prev, employeeName: error.response.data }));
+      });
+  };
+
   return (
     <>
       <Grid container spacing={2}>
@@ -154,15 +194,12 @@ export default function MasterFormsTab() {
       <Grid container spacing={2} sx={{ mt: 4 }}>
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 2, height: "100%" }}>
-            <CategoryForm initialErrors={errors} onSubmit={handleAddCategory} />
+            <SkillForm initialErrors={errors} onSubmit={handleAddSkill} />
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 2, height: "100%" }}>
-            <SubCategoryForm
-              initialErrors={errors}
-              onSubmit={handleAddSubCategory}
-            />
+            <EmployeeForm initialErrors={errors} onSubmit={handleAddEmployee} />
           </Paper>
         </Grid>
       </Grid>

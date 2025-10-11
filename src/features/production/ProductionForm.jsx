@@ -12,24 +12,36 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import SubCategoryQuantityForm from "./SubCategoryQuantityForm";
-import { fetchCategorySubCategoryCount } from "../../api/inventoryApi";
+import {
+  fetchCategorySubCategoryCount,
+  fetchSubCategoriesForCategory,
+} from "../../api/inventoryApi";
 import { fetchNextSerialCode } from "../../api/idApi";
-import { createBatch } from "../../api/batchApi";
+import SnackbarAlert from "../../components/SnackbarAlert";
 
-function ProductionForm({ categories, subCategories, zeroInventory }) {
+function ProductionForm({ categories, zeroInventory, moveToProduction }) {
+  const [subCategories, setSubCategories] = useState([]);
   const [review, setReview] = useState(false);
   const [formData, setFormData] = useState({
-    category: "",
+    category: null,
     serialCode: "",
     subCategories: [{ subCategory: "", quantity: "" }],
     isUrgent: false,
     remarks: "",
   });
   const [validData, setValidData] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   const handleUrgent = (e) => {
     setFormData((prevData) => ({
@@ -59,16 +71,37 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
   };
 
   // Handle subcategory change (fetch max count for the selected subcategory)
-  const handleSubCategoryChange = async (index, value) => {
-    let maxCount;
-    if (formData.category && value) {
-      maxCount = await fetchCategorySubCategoryCount(formData.category, value);
-    }
+  const handleSubCategoryChange = async (index, subCategory) => {
+    try {
+      let maxCount = 0;
 
-    const updatedSubCategories = formData.subCategories.map((item, i) =>
-      i === index ? { ...item, subCategory: value, maxCount } : item
-    );
-    setFormData({ ...formData, subCategories: updatedSubCategories });
+      if (formData.category && subCategory) {
+        // Fetch max count for this subcategory
+        const response = await fetchCategorySubCategoryCount(
+          formData.category.id,
+          subCategory.id
+        );
+        maxCount = response; // or response.data if your API returns { data: ... }
+      }
+
+      // Update the subcategories state
+      const updatedSubCategories = formData.subCategories.map((item, i) =>
+        i === index ? { ...item, subCategory, maxCount, quantity: "" } : item
+      );
+      setFormData((prev) => ({ ...prev, subCategories: updatedSubCategories }));
+    } catch (error) {
+      console.error(
+        "Error fetching max count for subcategory:",
+        subCategory?.name,
+        error
+      );
+      // Optionally, show a Snackbar or alert
+      setSnackbar({
+        open: true,
+        message: "Failed to fetch inventory for " + subCategory?.name,
+        severity: "error",
+      });
+    }
   };
 
   // Handle quantity change for subcategory
@@ -110,52 +143,78 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
     setValidData(valid);
   };
 
-  const moveToProduction = () => {
-    createBatch(formData);
-    setFormData({
-      category: "",
-      serialCode: "",
-      subCategories: [{ subCategory: "", quantity: "" }],
-      batchStatus: "",
-      isUrgent: false,
-      remarks: "",
-    });
-    setReview(!review);
-  };
+
 
   // Run validation whenever formData changes
   useEffect(() => {
     console.log(formData);
 
     checkValidData();
-    setReview(false); // Reset review state on form data change
   }, [formData]);
+
+  useEffect(() => {
+    setReview(false);
+  }, [formData.subCategories, formData.category]);
 
   return (
     <>
       <Box sx={{ display: "flex", columnGap: 8 }}>
         <FormControl sx={{ flex: 1 }}>
           <Autocomplete
-            options={categories.map((category) => category.name)}
+            options={categories || []}
+            autoHighlight
+            getOptionLabel={(option) => option.name}
             renderInput={(params) => <TextField {...params} label="Category" />}
             value={formData.category}
+            size="small"
             onChange={async (_, newValue) => {
-              // Fetch the serial code asynchronously
-              const serialCode = await fetchNextSerialCode(newValue).then(
-                (res) => res.data
-              );
+              if (!newValue) {
+                setFormData({
+                  ...formData,
+                  category: null,
+                  serialCode: "",
+                  subCategories: [{ subCategory: "", quantity: 0 }],
+                });
+                return;
+              }
 
-              // Update the formData state with the new serialCode and other values
-              setFormData({
-                ...formData,
-                serialCode: serialCode, // Use the resolved serialCode here
-                category: newValue,
-                subCategories: [{ subCategory: "", quantity: 0 }],
-              });
-              setReview(false);
+              try {
+                // Fetch the next serial code
+                const serialResponse = await fetchNextSerialCode(newValue.name);
+                const serialCode = serialResponse?.data || "";
+
+                // Fetch subcategories for the selected category
+                const subCategoryResponse = await fetchSubCategoriesForCategory(
+                  newValue.id
+                );
+                const fetchedSubCategories = subCategoryResponse?.data || [];
+
+                setSubCategories(fetchedSubCategories);
+
+                // Update form state
+                setFormData({
+                  ...formData,
+                  category: newValue,
+                  serialCode,
+                  subCategories: [{ subCategory: "", quantity: 0 }],
+                });
+                setReview(false);
+              } catch (error) {
+                console.error(
+                  "Error fetching data for category:",
+                  newValue?.name,
+                  error
+                );
+                setSnackbar({
+                  open: true,
+                  message: `Failed to load data for ${newValue?.name}`,
+                  severity: "error",
+                });
+              }
             }}
-            disabled={zeroInventory} // Disable if zero inventory
+            disabled={zeroInventory}
           />
+
           <FormControlLabel
             checked={formData.isUrgent}
             sx={{ mt: 1 }}
@@ -178,7 +237,7 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
                 <SubCategoryQuantityForm
                   key={index}
                   index={index}
-                  subCategories={subCategories}
+                  subCategories={subCategories || []}
                   subCategory={item.subCategory}
                   quantity={item.quantity}
                   maxCount={item.maxCount}
@@ -228,9 +287,9 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
             </TableHead>
             <TableBody>
               {formData.subCategories.map(
-                (subCat, idx) =>
-                  subCat.subCategory &&
-                  subCat.subCategory !== "" && (
+                (subCategory, idx) =>
+                  subCategory &&
+                  subCategory.subCategory !== "" && (
                     <TableRow key={idx} sx={{ borderBottom: "none" }}>
                       {idx === 0 ? (
                         <TableCell sx={{ border: "none" }}>
@@ -243,16 +302,18 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
                       )}
                       {idx === 0 ? (
                         <TableCell sx={{ border: "none" }}>
-                          {formData.category}
+                          {formData.category.name}
                         </TableCell>
                       ) : (
                         <TableCell sx={{ border: "none" }}></TableCell>
                       )}
                       <TableCell sx={{ border: "none" }}>
-                        {subCat.subCategory}
+                        {subCategory.subCategory
+                          ? subCategory.subCategory.name
+                          : ""}
                       </TableCell>
                       <TableCell sx={{ border: "none" }}>
-                        {subCat.quantity}
+                        {subCategory.quantity}
                       </TableCell>
                     </TableRow>
                   )
@@ -271,13 +332,19 @@ function ProductionForm({ categories, subCategories, zeroInventory }) {
           </FormControl>
 
           <Button
-            onClick={moveToProduction}
+            onClick={() => moveToProduction(formData, setFormData, setReview)}
             variant="contained"
             size="small"
             sx={{ alignSelf: "flex-end", mt: 2, textAlign: "end" }}
           >
             Move to Production
           </Button>
+          <SnackbarAlert
+            open={snackbar.open}
+            onClose={handleCloseSnackbar}
+            message={snackbar.message}
+            severity={snackbar.severity}
+          />
         </Box>
       )}
     </>

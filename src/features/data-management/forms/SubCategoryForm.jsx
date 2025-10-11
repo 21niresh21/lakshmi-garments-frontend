@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -14,22 +14,28 @@ function SubCategoryForm({
   mode = "add",
   initialErrors = {},
 }) {
+  const nameRef = useRef(null);
 
-  const [formData, setFormData] = React.useState({
+  const [formData, setFormData] = useState({
     id: initialData?.id || "",
     name: initialData?.name || "",
   });
 
-  const [error, setError] = React.useState({
+  const [error, setError] = useState({
     name: initialErrors.subCategoryName || "",
   });
 
-  // Add this useEffect to sync error state with initialErrors prop
-  React.useEffect(() => {
+  const isEdit = mode === "edit";
+
+  useEffect(() => {
     setError({
       name: initialErrors.subCategoryName || "",
     });
-  }, [initialErrors]);
+
+    if (nameRef.current && isEdit) {
+      nameRef.current.focus();
+    }
+  }, [initialErrors.subCategoryName]);
 
   const handleChange = (e) => {
     setError((prev) => ({ ...prev, [e.target.name]: "" }));
@@ -38,46 +44,46 @@ function SubCategoryForm({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (formData.name === "") {
+    if (formData.name.trim() === "") {
       setError({ name: "Subcategory name is required" });
       return;
     }
-    onSubmit(formData, () => setFormData({ name: "" }));
+    onSubmit(formData, () => setFormData({ name: "", id: "" }));
   };
-
-  const isEdit = mode === "edit";
-  console.log(error.name);
 
   return (
     <>
       <Typography variant="h6" sx={{ mb: 2 }}>
         {isEdit ? "Update Subcategory" : "Add Subcategory"}
       </Typography>
-      <TextField
-        placeholder="Subcategory Name"
-        variant="outlined"
-        name="name"
-        onChange={handleChange}
-        value={formData.name}
-        error={!!error.name}
-        slotProps={{
-          input: {
+
+      <form onSubmit={handleSubmit}>
+        <TextField
+          placeholder="Subcategory Name"
+          variant="outlined"
+          name="name"
+          inputRef={nameRef}
+          onChange={handleChange}
+          value={formData.name}
+          error={!!error.name}
+          InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <CategoryIcon />
               </InputAdornment>
             ),
-          },
-        }}
-        helperText={error.name}
-        fullWidth
-        sx={{ mb: 2 }}
-      />
-      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-        <Button variant="contained" onClick={handleSubmit}>
-          {isEdit ? "Update Subcategory" : "Add Subcategory"}
-        </Button>
-      </Box>
+          }}
+          helperText={error.name}
+          fullWidth
+          sx={{ mb: 2 }}
+        />
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button type="submit" variant="contained">
+            {isEdit ? "Update Subcategory" : "Add Subcategory"}
+          </Button>
+        </Box>
+      </form>
     </>
   );
 }

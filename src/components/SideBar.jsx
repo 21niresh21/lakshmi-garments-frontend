@@ -24,6 +24,7 @@ import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturi
 import InsightsIcon from "@mui/icons-material/Insights";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
 import SettingsIcon from '@mui/icons-material/Settings';
+import ConstructionIcon from '@mui/icons-material/Construction';
 import { Link, useLocation } from "react-router";
 
 const drawerWidth = 240;
@@ -78,14 +79,14 @@ const SIDEBAR_ITEMS = [
     index: 1,
     link: "/dashboard",
   },
-  { isSubHeader: true, label: "Analytics" },
-  {
-    icon: <InsightsIcon />,
-    label: "Analytics",
-    last: true,
-    index: 2,
-    link: "/analytics",
-  },
+  // { isSubHeader: true, label: "Analytics" },
+  // {
+  //   icon: <InsightsIcon />,
+  //   label: "Analytics",
+  //   last: true,
+  //   index: 2,
+  //   link: "/analytics",
+  // },
   { isSubHeader: true, label: "User Management" },
   {
     icon: <PeopleIcon />,
@@ -132,11 +133,18 @@ const SIDEBAR_ITEMS = [
     link: "/batches",
     last: true,
   },
+  { isSubHeader: true, label: "Jobwork" },
+  {
+    icon: <ConstructionIcon />,
+    label: "Jobwork",
+    index: 9,
+    link: "/jobwork",
+  },
   { isSubHeader: true, label: "Master Data" },
   {
     icon: <SettingsIcon />,
     label: "Data Management",
-    index: 9,
+    index: 10,
     link: "/data-management",
   }
 ];

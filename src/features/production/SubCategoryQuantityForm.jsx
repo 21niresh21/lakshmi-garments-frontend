@@ -1,15 +1,13 @@
 import {
   Autocomplete,
   Box,
-  Button,
   FormControl,
   FormHelperText,
   IconButton,
   TextField,
-  Typography,
 } from "@mui/material";
 import React from "react";
-import CloseIcon from "@mui/icons-material/Close";
+import DeleteIcon from '@mui/icons-material/Delete';
 
 function SubCategoryQuantityForm({
   subCategories,
@@ -30,21 +28,25 @@ function SubCategoryQuantityForm({
     <Box sx={{ display: "flex", columnGap: 3 }}>
       <FormControl sx={{ flex: 1 }}>
         <Autocomplete
+          autoHighlight
           disabled={zeroInventory || !isCategorySelected} // Disable if zero inventory
           options={subCategories
-            .filter((subCat) => !selectedSubCategories.includes(subCat.name)) // Filter out already selected subcategories
-            .map((subCategory) => subCategory.name)}
-          value={subCategory}
+            .filter((subCat) => !selectedSubCategories.includes(subCat)) // Filter out already selected subcategories
+            .map((subCategory) => subCategory)}
+          getOptionLabel={(option) => option.name}
+          value={subCategory || null}
           onChange={(_, newValue) => handleSubCategoryChange(index, newValue)}
           renderInput={(params) => (
             <TextField {...params} label="Sub Category" />
           )}
+          size="small"
         />
       </FormControl>
       <FormControl sx={{ flex: 1 }}>
         <TextField
           type="number"
           value={quantity || ""}
+          size="small"
           onChange={(e) =>
             handleQuantityChange(index, parseInt(e.target.value, 10))
           }
@@ -57,13 +59,13 @@ function SubCategoryQuantityForm({
         </FormHelperText>
       </FormControl>
       <IconButton
-        sx={{ alignSelf: "center " }}
+        sx={{ alignSelf: "start " }}
         size="small"
         onClick={() => handleRemoveSubCategory(index)}
         color="error"
         disabled={zeroInventory} // Disable if zero inventory
       >
-        <CloseIcon />
+        <DeleteIcon />
       </IconButton>
     </Box>
   );

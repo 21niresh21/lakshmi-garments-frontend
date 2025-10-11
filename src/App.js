@@ -14,6 +14,8 @@ import Users from "./pages/Users";
 import MasterData from "./pages/MasterDataPage";
 import ZoomableLineChart from "./features/analytics/ZoomableLineChart";
 import Analytics from "./pages/Analytics";
+import Jobwork from "./pages/Jobwork";
+import BatchDetail from "./pages/BatchDetail";
 
 // Function to check authentication from localStorage
 const getAuthStatus = () => !!localStorage.getItem("user");
@@ -108,7 +110,7 @@ function App() {
                   <Analytics/>
                 </ProtectedRoute>
               }
-            />
+            />  
             <Route
               path="/batches"
               element={
@@ -118,10 +120,26 @@ function App() {
               }
             />
             <Route
+              path="/batch/:id"
+              element={
+                <ProtectedRoute>
+                  <BatchDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/users"
               element={
                 <ProtectedRoute>
                   <Users />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobwork"
+              element={
+                <ProtectedRoute>
+                  <Jobwork />
                 </ProtectedRoute>
               }
             />

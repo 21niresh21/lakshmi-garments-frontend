@@ -44,7 +44,7 @@ export default function CategoryTab({ showSnackbar }) {
 
   useEffect(() => {
     fetchCategories(searchQuery)
-      .then((response) => setRows(response.data.content))
+      .then((response) => setRows(response.data))
       .catch(() => showSnackbar("Failed to fetch categories. An error occurred!", "error"));
   }, [searchQuery, refresh]);
 

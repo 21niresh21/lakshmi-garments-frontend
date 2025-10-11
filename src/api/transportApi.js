@@ -30,7 +30,7 @@ export const addTransport = async (transportData) => {
 
 export const updateTransport = async (transportId, updatedData) => {
   try {
-    const response = await axiosInstance.patch(
+    const response = await axiosInstance.put(
       `/transports/${transportId}`,
       updatedData
     );

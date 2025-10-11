@@ -54,7 +54,7 @@ export default function SupplierTab({ showSnackbar }) {
   useEffect(() => {
     fetchSuppliers(searchQuery)
       .then((response) => {
-        setRows(response.data.content);
+        setRows(response.data);
       })
       .catch((err) => {
         showSnackbar("Failed to fetch suppliers. An error occurred!", "error");
@@ -69,7 +69,7 @@ export default function SupplierTab({ showSnackbar }) {
         onEdit={handleEdit}
         toolbar={
           <TableSearchToolBar
-            header={`Suppliers (${rows.length})`}
+            header={rows && `Suppliers (${rows.length})`}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             placeholder={"Search Supplier Names"}

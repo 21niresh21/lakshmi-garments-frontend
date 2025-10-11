@@ -2,13 +2,15 @@ import { TableCell, TableHead, TableRow, TableSortLabel } from "@mui/material";
 import React from "react";
 
 const HEADERS = [
+  { field: "icon", label: "", sort: false },
   { field: "id", label: "ID", sort: true },
   { field: "serialCode", label: "Serial Code", sort: true },
-  { field: "category", label: "Category", sort: true },
+  { field: "categoryName", label: "Category", sort: true },
   { field: "createdAt", label: "Created At", sort: true },
-  { field: "remarks", label: "Remarks", sort: true },
-  { field: "isUrgent", label: "Is Urgent ?", sort: true },
-  { field: "status", label: "Status", sort: true },
+  { field: "batchStatus", label: "Status", sort: true },
+  { field: "isUrgent", label: "Priority", sort: true },
+  { field: "remarks", label: "Remarks", sort: false },
+  { field: "action", label: "More", sort: false },
 ];
 
 function BatchTableHeader({ sort, setSort }) {

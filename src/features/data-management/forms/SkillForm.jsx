@@ -6,9 +6,9 @@ import {
   Button,
   InputAdornment,
 } from "@mui/material";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects"; // icon for skills
 
-function TransportForm({
+function SkillForm({
   initialData = {},
   onSubmit,
   mode = "add",
@@ -22,18 +22,20 @@ function TransportForm({
   });
 
   const [error, setError] = useState({
-    name: initialErrors.transportName || "",
+    name: initialErrors.skillName || "",
   });
+
+  const isEdit = mode === "edit";
 
   useEffect(() => {
     setError({
-      name: initialErrors.transportName || "",
+      name: initialErrors.skillName || "",
     });
 
     if (nameRef.current && isEdit) {
       nameRef.current.focus();
     }
-  }, [initialErrors.transportName]);
+  }, [initialErrors.skillName, isEdit]);
 
   const handleChange = (e) => {
     setError((prev) => ({ ...prev, [e.target.name]: "" }));
@@ -43,23 +45,21 @@ function TransportForm({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.name.trim() === "") {
-      setError((prev) => ({ ...prev, name: "Transport name is required" }));
+      setError((prev) => ({ ...prev, name: "Skill name is required" }));
       return;
     }
     onSubmit(formData, () => setFormData({ name: "", id: "" }));
   };
 
-  const isEdit = mode === "edit";
-
   return (
     <>
       <Typography variant="h6">
-        {isEdit ? "Update Transport" : "Add Transport"}
+        {isEdit ? "Update Skill" : "Add Skill"}
       </Typography>
 
       <form onSubmit={handleSubmit}>
         <TextField
-          placeholder="Transport Name"
+          placeholder="Skill Name"
           variant="outlined"
           name="name"
           inputRef={nameRef}
@@ -68,7 +68,7 @@ function TransportForm({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <LocalShippingIcon />
+                <EmojiObjectsIcon />
               </InputAdornment>
             ),
           }}
@@ -80,7 +80,7 @@ function TransportForm({
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
           <Button variant="contained" type="submit">
-            {isEdit ? "Update Transport" : "Add Transport"}
+            {isEdit ? "Update Skill" : "Add Skill"}
           </Button>
         </Box>
       </form>
@@ -88,4 +88,4 @@ function TransportForm({
   );
 }
 
-export default TransportForm;
+export default SkillForm;

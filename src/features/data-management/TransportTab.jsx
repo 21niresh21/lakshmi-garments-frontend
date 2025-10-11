@@ -55,7 +55,7 @@ export default function TransportTab({ showSnackbar }) {
   useEffect(() => {
     fetchTransports(searchQuery)
       .then((response) => {
-        setRows(response.data.content);
+        setRows(response.data);
       })
       .catch((err) => {
         showSnackbar("Failed to fetch transports. An error occurred!", "error");
