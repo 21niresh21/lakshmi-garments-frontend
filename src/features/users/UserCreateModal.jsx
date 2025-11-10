@@ -101,6 +101,7 @@ const UserCreateModal = ({ open, onClose, roles = [], onSubmit }) => {
         />
 
         <Autocomplete
+          autoHighlight
           options={roles}
           getOptionLabel={(option) => option}
           value={form.roleName}

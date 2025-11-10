@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Box, styled } from "@mui/material";
 import { Route, Routes, Navigate, useNavigate } from "react-router";
 import SideBar from "./components/SideBar";
@@ -16,6 +16,12 @@ import ZoomableLineChart from "./features/analytics/ZoomableLineChart";
 import Analytics from "./pages/Analytics";
 import Jobwork from "./pages/Jobwork";
 import BatchDetail from "./pages/BatchDetail";
+import NoConnection from "./components/NoConnection";
+import ConnectionChecker from "./components/ConnectionChecker";
+import { ConnectionProvider } from "./context/connectionContext";
+import { NetworkProvider, NetworkContext } from "./context/networkActivityContext";
+import GlobalBackdrop from "./components/GlobalBackdrop";
+import PayDay from "./pages/PayDay";
 
 // Function to check authentication from localStorage
 const getAuthStatus = () => !!localStorage.getItem("user");
@@ -45,7 +51,7 @@ const ContentLayout = styled(Box)({
 function App() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(getAuthStatus());
-
+  const networkContext = useContext(NetworkContext);
   // Recheck auth when localStorage changes (login/logout)
   useEffect(() => {
     const checkAuth = () => setIsAuthenticated(getAuthStatus());
@@ -53,112 +59,135 @@ function App() {
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
+  useEffect(() => {
+    console.log(networkContext);
+  }, [networkContext]);
+
   return (
-    <Box display="flex" height="100vh">
-      {isAuthenticated && <SideBar />} {/* Show Sidebar when logged in */}
-      <MainLayout>
-        <ContentLayout>
-          <Routes>
-            <Route
-              path="/login"
-              element={<Login setIsAuthenticated={setIsAuthenticated} />}
-            />
-            <Route
-              path="/stock-control"
-              element={
-                <ProtectedRoute>
-                  <StockControl />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/stock"
-              element={
-                <ProtectedRoute>
-                  <Stock />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/invoice"
-              element={
-                <ProtectedRoute>
-                  <Invoice />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/invoice/:id"
-              element={
-                <ProtectedRoute>
-                  <InvoiceDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/production"
-              element={
-                <ProtectedRoute>
-                  <Production />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Analytics/>
-                </ProtectedRoute>
-              }
-            />  
-            <Route
-              path="/batches"
-              element={
-                <ProtectedRoute>
-                  <Batch />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/batch/:id"
-              element={
-                <ProtectedRoute>
-                  <BatchDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <Users />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/jobwork"
-              element={
-                <ProtectedRoute>
-                  <Jobwork />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/data-management"
-              element={
-                <ProtectedRoute>
-                  <MasterData />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="*"
-              element={<Navigate to={isAuthenticated ? "/stock" : "/login"} />}
-            />
-          </Routes>
-        </ContentLayout>
-      </MainLayout>
-    </Box>
+    <NetworkProvider>
+      <GlobalBackdrop networkContext={networkContext} />
+      <ConnectionProvider>
+        <ConnectionChecker>
+          <Box display="flex" height="100vh">
+            {isAuthenticated && <SideBar />}{" "}
+            {/* Show Sidebar when logged in and no network error */}
+            <MainLayout>
+              <ContentLayout>
+                <Routes>
+                  <Route
+                    path="/login"
+                    element={<Login setIsAuthenticated={setIsAuthenticated} />}
+                  />
+                  <Route
+                    path="/stock-control"
+                    element={
+                      <ProtectedRoute>
+                        <StockControl />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/stock"
+                    element={
+                      <ProtectedRoute>
+                        <Stock />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/invoice"
+                    element={
+                      <ProtectedRoute>
+                        <Invoice />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/invoice/:id"
+                    element={
+                      <ProtectedRoute>
+                        <InvoiceDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/production"
+                    element={
+                      <ProtectedRoute>
+                        <Production />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/analytics"
+                    element={
+                      <ProtectedRoute>
+                        <Analytics />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/batches"
+                    element={
+                      <ProtectedRoute>
+                        <Batch />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/batch/:id"
+                    element={
+                      <ProtectedRoute>
+                        <BatchDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/users"
+                    element={
+                      <ProtectedRoute>
+                        <Users />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobwork"
+                    element={
+                      <ProtectedRoute>
+                        <Jobwork />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/pay-day"
+                    element={
+                      <ProtectedRoute>
+                        <PayDay />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/data-management"
+                    element={
+                      <ProtectedRoute>
+                        <MasterData />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/connection-error" element={<NoConnection />} />
+                  <Route
+                    path="*"
+                    element={
+                      <Navigate to={isAuthenticated ? "/stock" : "/login"} />
+                    }
+                  />
+                </Routes>
+              </ContentLayout>
+            </MainLayout>
+          </Box>
+        </ConnectionChecker>
+      </ConnectionProvider>
+    </NetworkProvider>
   );
 }
 

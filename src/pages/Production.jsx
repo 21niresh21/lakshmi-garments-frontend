@@ -1,24 +1,34 @@
 import React, { useEffect, useState } from "react";
 import ProductionForm from "../features/production/ProductionForm";
-import { Box, Card, CardContent, Chip, Typography, Alert } from "@mui/material";
+import { Box, Typography, Alert } from "@mui/material";
 import {
   fetchAllCategorySubcategoryCount,
   fetchDistinctCategories,
+  fetchSubCategoriesForCategory,
 } from "../api/inventoryApi";
 import { createBatch } from "../api/batchApi";
 import InboxIcon from "@mui/icons-material/Inbox";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline"; // MUI icon
+import InventoryCountCard from "../features/production/InventoryCountCard";
+import SnackbarAlert from "../components/SnackbarAlert";
 
 function Production() {
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [categoryCount, setCategoryCount] = useState([]);
   const [zeroInventory, setZeroInventory] = useState(false);
-  const [networkError, setNetworkError] = useState(false);
+  const [error, setError] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
+  });
+  const [formData, setFormData] = useState({
+    category: null,
+    serialCode: "",
+    subCategories: [{ subCategory: "", quantity: "" }],
+    isUrgent: false,
+    remarks: "",
   });
 
   const moveToProduction = (formData, setFormData, setReview) => {
@@ -67,27 +77,43 @@ function Production() {
         setCategories(res.data);
       })
       .catch(() => {
-        setNetworkError(true);
+        setSnackbar({
+          open: true,
+          message: "Error fetching categories",
+          severity: "error",
+        });
       });
 
+    // for the cards data
     fetchAllCategorySubcategoryCount()
       .then((res) => {
-        console.log(res);
-
         setCategoryCount(res.data);
       })
       .catch(() => {
-        setNetworkError(true);
+        setSnackbar({
+          open: true,
+          message: "Error fetching category count",
+          severity: "error",
+        });
       });
-
-    // fetchSubCategories()
-    //   .then((res) => {
-    //     setSubCategories(res.data.content);
-    //   })
-    //   .catch(() => {
-    //     setNetworkError(true);
-    //   });
   }, []);
+
+  useEffect(() => {
+    if (formData.category) {
+    fetchSubCategoriesForCategory(formData.category.id)
+      .then((res) => {
+        console.log("res", res);
+        setSubCategories(res.data);
+      })
+      .catch(() => {
+        setSnackbar({
+          open: true,
+          message: "Error fetching sub categories",
+            severity: "error",
+          });
+        });
+    }
+  }, [formData.category]);
 
   useEffect(() => {
     if (categoryCount.length === 0) {
@@ -97,24 +123,18 @@ function Production() {
     }
   }, [categoryCount]);
 
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", rowGap: 3 }}>
       <Typography variant="h5" component="h1">
         Move to Production
       </Typography>
 
-      {networkError && (
-        <Alert
-          icon={<ErrorOutlineIcon fontSize="inherit" />}
-          severity="error"
-          sx={{ mb: 2 }}
-        >
-          Failed to load data from the server. Please check your connection or
-          try again later.
-        </Alert>
-      )}
-
-      {categoryCount.length === 0 && !networkError ? (
+      {categoryCount.length === 0 && !error ? (
         <Box
           sx={{
             display: "flex",
@@ -129,36 +149,21 @@ function Production() {
           </Typography>
         </Box>
       ) : (
-        <Box sx={{ display: "flex", columnGap: 3 }}>
-          {categoryCount.map((item) => (
-            <Card sx={{ flex: 1 }} key={item.categoryName}>
-              <CardContent sx={{ height: "100%" }}>
-                <Typography variant="h5" component="div">
-                  {item.categoryName}
-                </Typography>
-                {item.subCategories.map((subCategory) => (
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    key={subCategory.subCategoryName}
-                  >
-                    <Chip
-                      label={`${subCategory.subCategoryName}  ${subCategory.count}`}
-                      size="small"
-                      sx={{ mt: 1, mr: 1 }}
-                    />
-                  </Typography>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
+        <InventoryCountCard categoryCount={categoryCount} />
       )}
       <ProductionForm
         moveToProduction={moveToProduction}
         categories={categories}
         subCategories={subCategories}
         zeroInventory={zeroInventory}
+        formData={formData}
+        setFormData={setFormData}
+      />
+      <SnackbarAlert
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={handleCloseSnackbar}
       />
     </Box>
   );

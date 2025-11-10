@@ -34,6 +34,7 @@ import { fetchSubCategories } from "../api/subCategoryApi";
 import { createShipment } from "../api/shipmentApi";
 import AddIcon from "@mui/icons-material/Add";
 import { fetchCategories } from "../api/categoryApi";
+import CloseIcon from "@mui/icons-material/Close";
 
 const initialBaleState = {
   baleNumber: "",
@@ -49,7 +50,7 @@ const initialBaleState = {
 
 const initialLRState = {
   lrNumber: "",
-  bales: [initialBaleState], // Each LR starts with one empty bale
+  bales: [{ ...initialBaleState }], // Each LR starts with one empty bale
 };
 
 function StockControl() {
@@ -63,8 +64,13 @@ function StockControl() {
     if (field === "lrNumber") {
       updatedLrs[lrIndex].lrNumber = value;
     } else if (field === "subCategory") {
-      updatedLrs[lrIndex].bales[baleIndex].subCategoryID = value["id"]; // Update sub-category object
+      updatedLrs[lrIndex].bales[baleIndex].subCategoryID =
+        value && value["id"] ? value["id"] : "";
       updatedLrs[lrIndex].bales[baleIndex].subCategory = value;
+    } else if (field === "category") {
+      updatedLrs[lrIndex].bales[baleIndex].categoryID =
+        value && value["id"] ? value["id"] : "";
+      updatedLrs[lrIndex].bales[baleIndex].category = value;
     } else {
       updatedLrs[lrIndex].bales[baleIndex][field] = value;
     }
@@ -138,7 +144,9 @@ function StockControl() {
     const updatedLrs = [...lrs];
     updatedLrs[lrIndex].bales.splice(baleIndex, 1);
     setLrs(updatedLrs);
-    setLrErrors((prevErrors) => prevErrors.filter((_, index) => index !== lrIndex));
+    setLrErrors((prevErrors) =>
+      prevErrors.filter((_, index) => index !== lrIndex)
+    );
   };
 
   // Add a new LR to existing LRs
@@ -174,19 +182,21 @@ function StockControl() {
 
   const createNewTransportLR = () => ({
     lrNumber: "",
-    bales: [ { ...initialBaleState } ],
+    bales: [{ ...initialBaleState }],
   });
 
   const createNewSelfLR = () => ({
     lrNumber: `LR-${Math.floor(Date.now() / 1000)}`,
-    bales: [ { ...initialBaleState } ],
+    bales: [JSON.parse(JSON.stringify(initialBaleState))],
   });
 
   // Remove an LR
   const removeLR = (lrIndex) => {
     const updatedLrs = lrs.filter((_, index) => index !== lrIndex);
     setLrs(updatedLrs);
-    setLrErrors((prevErrors) => prevErrors.filter((_, index) => index !== lrIndex));
+    setLrErrors((prevErrors) =>
+      prevErrors.filter((_, index) => index !== lrIndex)
+    );
     console.log(lrs);
   };
 
@@ -227,7 +237,7 @@ function StockControl() {
     const defaultLrs = [];
     defaultLrs.push({
       lrNumber: `LR-${currentUtcTimeInSeconds}`, // LR Number based on UTC time
-      bales: [initialBaleState], // Add empty bale to the LR
+      bales: [{ ...initialBaleState }], // Add empty bale to the LR
     });
     setLrs(defaultLrs);
   };
@@ -244,7 +254,7 @@ function StockControl() {
     // Add new LR with a generated LR number
     defaultLrs.push({
       lrNumber: `LR-${currentUtcTimeInSeconds}`, // LR Number based on UTC time
-      bales: [initialBaleState], // Add empty bale to the LR
+      bales: [{ ...initialBaleState }], // Add empty bale to the LR
     });
 
     setLrs(defaultLrs);
@@ -356,14 +366,16 @@ function StockControl() {
     if (Object.values(errors).length > 0 || hasLrErrors) {
       return;
     }
-    console.log(formData, lrs);
-    return;
+
     const userJson = localStorage.getItem("user");
     const user = JSON.parse(userJson);
 
-    formData.lorryReceipts = lrs;
-    formData.createdById = user.id; // Add createdBy field to formData
-    createShipment(formData).then((res) => {
+    let tempFormData = { ...formData };
+    tempFormData.lorryReceipts = lrs;
+    tempFormData.createdById = user.id; // Add createdBy field to formDat
+    // console.log(tempFormData);
+    // return;
+    createShipment(tempFormData).then((res) => {
       if (res.status === 201) {
         handleClick();
         setFormData({
@@ -427,7 +439,7 @@ function StockControl() {
       .then((response) => {
         console.log("suppliers", response);
 
-        setSuppliers(response.data.content || []); // Update the suppliers state with the fetched data
+        setSuppliers(response.data || []); // Update the suppliers state with the fetched data
         setLoading(false);
         console.log("Fetched suppliers:", response.data.content);
       })
@@ -439,7 +451,7 @@ function StockControl() {
     // function to fetch tranports
     fetchTransports()
       .then((response) => {
-        setTransports(response.data.content || []);
+        setTransports(response.data || []);
         setLoading(false);
         console.log("Fetched tranports:", response.data.content);
       })
@@ -450,9 +462,9 @@ function StockControl() {
 
     fetchSubCategories()
       .then((response) => {
-        setSubCategories(response.data.content || []);
+        setSubCategories(response.data || []);
         setLoading(false);
-        console.log("Fetched sub categories:", response.data.content);
+        console.log("Fetched sub categories:", response.data);
       })
       .catch((error) => {
         setError("Error fetching sub categories!"); // Set an error if the API call fails
@@ -461,9 +473,9 @@ function StockControl() {
 
     fetchCategories()
       .then((response) => {
-        setCategories(response.data.content || []);
+        setCategories(response.data || []);
         setLoading(false);
-        console.log("Fetched categories:", response.data.content);
+        console.log("Fetched categories:", response.data);
       })
       .catch((error) => {
         setError("Error fetching categories!"); // Set an error if the API call fails
@@ -517,7 +529,7 @@ function StockControl() {
     <Grid container spacing={2} sx={{ height: "100%" }}>
       {/* Left Panel - 1/3 width (Invoice Details) */}
       <Grid item xs={3}>
-        <Paper sx={{ height: "100%", padding: 2, backgroundColor: "#f4f4f4" }}>
+        <Paper sx={{ height: "97%", padding: 2, backgroundColor: "#f4f4f4" }}>
           {/* Left Panel Content */}
           <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 2 }}>
             Invoice Details
@@ -562,6 +574,7 @@ function StockControl() {
                 label="Invoice Number"
                 variant="outlined"
                 name="invoiceNumber"
+                value={formData.invoiceNumber}
                 onChange={handleFormInputChange}
                 helperText={formErrors.invoiceNumber}
                 error={formErrors.invoiceNumber}
@@ -569,6 +582,7 @@ function StockControl() {
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DemoContainer components={["DatePicker"]}>
                   <DatePicker
+                    format="DD/MM/YYYY"
                     slotProps={{
                       textField: {
                         size: "medium",
@@ -584,12 +598,16 @@ function StockControl() {
                       handleDate("invoiceDate", value);
                     }}
                     maxDate={dayjs()}
+                    value={
+                      formData.invoiceDate ? dayjs(formData.invoiceDate) : null
+                    }
                   />
                 </DemoContainer>
               </LocalizationProvider>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DemoContainer components={["DatePicker"]}>
                   <DatePicker
+                    format="DD/MM/YYYY"
                     slotProps={{
                       textField: {
                         size: "medium",
@@ -605,12 +623,18 @@ function StockControl() {
                       handleDate("shipmentReceivedDate", value);
                     }}
                     maxDate={dayjs()}
+                    value={
+                      formData.shipmentReceivedDate
+                        ? dayjs(formData.shipmentReceivedDate)
+                        : null
+                    }
                   />
                 </DemoContainer>
               </LocalizationProvider>
 
               <FormControl>
                 <Autocomplete
+                  autoHighlight
                   name="supplierID"
                   options={suppliers}
                   getOptionLabel={(option) => option.name}
@@ -640,6 +664,7 @@ function StockControl() {
 
               <FormControl>
                 <Autocomplete
+                  autoHighlight
                   name="transportID"
                   renderInput={(params) => (
                     <TextField
@@ -704,7 +729,7 @@ function StockControl() {
 
       {/* Right Panel - 2/3 width (LR and Bales) */}
       <Grid item xs={9}>
-        <Paper sx={{ height: "100%", padding: 2 }}>
+        <Paper sx={{ height: "97%", padding: 2 }}>
           {/* Right Panel Content */}
           <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 2 }}>
             LR and Bales
@@ -713,9 +738,20 @@ function StockControl() {
             {/* Right Panel Content */}
             <Box>
               {lrs.map((lr, lrIndex) => (
-                <Paper key={lr.lrNumber || lrIndex} sx={{ padding: 2, marginBottom: 2 }}>
+                <Paper key={lrIndex} sx={{ padding: 2, marginBottom: 2 }}>
                   <Grid container spacing={2}>
                     {/* LR Number TextField */}
+                    <Grid item xs={12}>
+                      <Box sx={{ display: "flex", justifyContent: "flex-end", mb : -2 }}>
+                        <IconButton
+                          variant="outlined"
+                          color="error"
+                          onClick={() => removeLR(lrIndex)}
+                        >
+                          <CloseIcon />
+                        </IconButton>
+                      </Box>
+                    </Grid>
                     <Grid item xs={12}>
                       <TextField
                         label="LR Number"
@@ -723,7 +759,12 @@ function StockControl() {
                         value={lr.lrNumber}
                         onChange={(e) => {
                           clearLrErrors(lrIndex, null, "lrNumber");
-                          handleInputChange(lrIndex, 0, "lrNumber", e.target.value);
+                          handleInputChange(
+                            lrIndex,
+                            0,
+                            "lrNumber",
+                            e.target.value
+                          );
                         }}
                         error={
                           !!(lrErrors[lrIndex] && lrErrors[lrIndex].lrNumber)
@@ -736,7 +777,7 @@ function StockControl() {
 
                     {/* Render bales within this LR */}
                     {lr.bales.map((bale, baleIndex) => (
-                      <Grid item xs={12} key={bale.baleNumber || baleIndex}>
+                      <Grid item xs={12} key={baleIndex}>
                         <Grid container spacing={2}>
                           <Grid item xs={2}>
                             <TextField
@@ -744,7 +785,12 @@ function StockControl() {
                               value={bale.baleNumber}
                               onChange={(e) => {
                                 clearLrErrors(lrIndex, baleIndex, "baleNumber");
-                                handleInputChange(lrIndex, baleIndex, "baleNumber", e.target.value);
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "baleNumber",
+                                  e.target.value
+                                );
                               }}
                               error={
                                 !!(
@@ -772,7 +818,12 @@ function StockControl() {
                               }}
                               onChange={(e) => {
                                 clearLrErrors(lrIndex, baleIndex, "quantity");
-                                handleInputChange(lrIndex, baleIndex, "quantity", e.target.value);
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "quantity",
+                                  e.target.value
+                                );
                               }}
                               error={
                                 !!(
@@ -800,7 +851,12 @@ function StockControl() {
                               }}
                               onChange={(e) => {
                                 clearLrErrors(lrIndex, baleIndex, "length");
-                                handleInputChange(lrIndex, baleIndex, "length", e.target.value);
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "length",
+                                  e.target.value
+                                );
                               }}
                               error={
                                 !!(
@@ -828,7 +884,12 @@ function StockControl() {
                               }}
                               onChange={(e) => {
                                 clearLrErrors(lrIndex, baleIndex, "price");
-                                handleInputChange(lrIndex, baleIndex, "price", e.target.value);
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "price",
+                                  e.target.value
+                                );
                               }}
                               error={
                                 !!(
@@ -850,7 +911,12 @@ function StockControl() {
                               value={bale.quality}
                               onChange={(e) => {
                                 clearLrErrors(lrIndex, baleIndex, "quality");
-                                handleInputChange(lrIndex, baleIndex, "quality", e.target.value);
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "quality",
+                                  e.target.value
+                                );
                               }}
                               error={
                                 !!(
@@ -868,6 +934,7 @@ function StockControl() {
                           </Grid>
                           <Grid item xs={2}>
                             <Autocomplete
+                              autoHighlight
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
@@ -891,14 +958,24 @@ function StockControl() {
                               options={subCategories}
                               getOptionLabel={(option) => option.name}
                               onChange={(event, newValue) => {
-                                clearLrErrors(lrIndex, baleIndex, "subCategoryID");
-                                handleInputChange(lrIndex, baleIndex, "subCategory", newValue);
+                                clearLrErrors(
+                                  lrIndex,
+                                  baleIndex,
+                                  "subCategoryID"
+                                );
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "subCategory",
+                                  newValue
+                                );
                               }}
                               value={bale.subCategory} // Binding value
                             />
                           </Grid>
                           <Grid item xs={2}>
                             <Autocomplete
+                              autoHighlight
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
@@ -923,48 +1000,53 @@ function StockControl() {
                               getOptionLabel={(option) => option.name}
                               onChange={(event, newValue) => {
                                 clearLrErrors(lrIndex, baleIndex, "categoryID");
-                                handleInputChange(lrIndex, baleIndex, "category", newValue);
+                                // CHANGED: Next line, use "category" to parallel "subCategory"
+                                handleInputChange(
+                                  lrIndex,
+                                  baleIndex,
+                                  "category",
+                                  newValue
+                                );
                               }}
-                              value={bale.category} // Binding value
+                              // CHANGED: Next line, use bale.category object!
+                              value={bale.category}
                             />
                           </Grid>
 
-                          {/* Remove Bale Button */}
-                          <Grid item xs={0.5}>
+                          <Grid
+                            item
+                            xs={0.5}
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                          >
                             <IconButton
-                              sx={{ ml: -1, mt: 1 }}
                               color="error"
                               onClick={() => removeBale(lrIndex, baleIndex)}
                             >
                               <DeleteForeverIcon />
                             </IconButton>
-                            {/* <Button
-                              variant="outlined"
-                              color="error"
-                              
-                            >
-                              Remove Bale
-                            </Button> */}
-                          </Grid>
-                          {baleIndex === lr.bales.length - 1 && (
-                            <Grid item xs={0.1}>
+                            {/* {baleIndex === lr.bales.length - 1 && (
                               <IconButton
                                 variant="contained"
                                 color="primary"
                                 onClick={() =>
                                   addBale(lrIndex, formData.isTransportSelf)
                                 }
+                                sx={{ ml: -1 }}
                               >
                                 <AddIcon />
                               </IconButton>
-                            </Grid>
-                          )}
+                            )} */}
+                          </Grid>
                         </Grid>
                       </Grid>
                     ))}
 
                     {/* Add Bale Button */}
-                    <Grid item xs={12}>
+                    {/* <Grid item xs={12}>
                       <IconButton
                         variant="contained"
                         color="primary"
@@ -974,17 +1056,27 @@ function StockControl() {
                       >
                         <AddIcon />
                       </IconButton>
-                    </Grid>
+                    </Grid> */}
 
                     {/* Remove LR Button */}
                     <Grid item xs={12}>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => removeLR(lrIndex)}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 2,
+                          justifyContent: "flex-start",
+                        }}
                       >
-                        Remove LR
-                      </Button>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() =>
+                            addBale(lrIndex, formData.isTransportSelf)
+                          }
+                        >
+                          Add Bale
+                        </Button>
+                      </Box>
                     </Grid>
                   </Grid>
                 </Paper>
@@ -1002,8 +1094,10 @@ function StockControl() {
                 variant="contained"
                 color="primary"
                 onClick={() => createShipmentOrder()}
+                sx={{ ml: 1 }}
+                disabled={lrs.length === 0}
               >
-                create
+                Save Shipment
               </Button>
               <Snackbar
                 open={open}

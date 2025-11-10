@@ -20,6 +20,12 @@ function Login({ setIsAuthenticated }) {
         password,
       });
 
+      const isActive = response.data.isActive;
+      if (!isActive) {
+        setError("Access has been revoked. Contact Admin")
+        return
+      }
+
       localStorage.setItem("user", JSON.stringify(response.data)); // Store token
       setIsAuthenticated(true); // Update authentication state
       navigate("/stock-control"); // Redirect after login
@@ -56,26 +62,28 @@ function Login({ setIsAuthenticated }) {
           Login
         </Typography>
         {error && <Typography color="error">{error}</Typography>}
-        <TextField
-          label="Username"
-          variant="outlined"
-          fullWidth
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          sx={{ marginBottom: 2 }}
-        />
-        <TextField
-          label="Password"
-          type="password"
-          variant="outlined"
-          fullWidth
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          sx={{ marginBottom: 2 }}
-        />
-        <Button variant="contained" fullWidth onClick={handleLogin}>
-          Login
-        </Button>
+        <form onSubmit={handleLogin}>
+          <TextField
+            label="Username"
+            variant="outlined"
+            fullWidth
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            sx={{ marginBottom: 2 }}
+          />
+          <TextField
+            label="Password"
+            type="password"
+            variant="outlined"
+            fullWidth
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            sx={{ marginBottom: 2 }}
+          />
+          <Button variant="contained" fullWidth type="submit">
+            Login
+          </Button>
+        </form>
       </Paper>
     </Box>
   );

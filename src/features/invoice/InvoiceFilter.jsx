@@ -38,7 +38,7 @@ function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
 
   useEffect(() => {
     fetchSuppliers()
-      .then((res) => setSuppliers(res.data.content))
+      .then((res) => setSuppliers(res.data))
       .catch((error) => {
         if (error.code === "ERR_NETWORK") {
           setNetworkError(true);
@@ -46,7 +46,7 @@ function InvoiceFilter({ anchorEl, handleClose, onFilterChange, filter }) {
       });
 
     fetchTransports()
-      .then((res) => setTransports(res.data.content))
+      .then((res) => setTransports(res.data))
       .catch((error) => {
         if (error.code === "ERR_NETWORK") {
           setNetworkError(true);

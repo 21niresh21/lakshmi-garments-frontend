@@ -22,16 +22,16 @@ import {
 import { fetchNextSerialCode } from "../../api/idApi";
 import SnackbarAlert from "../../components/SnackbarAlert";
 
-function ProductionForm({ categories, zeroInventory, moveToProduction }) {
-  const [subCategories, setSubCategories] = useState([]);
+function ProductionForm({
+  categories,
+  zeroInventory,
+  moveToProduction,
+  subCategories,
+  formData,
+  setFormData,
+}) {
   const [review, setReview] = useState(false);
-  const [formData, setFormData] = useState({
-    category: null,
-    serialCode: "",
-    subCategories: [{ subCategory: "", quantity: "" }],
-    isUrgent: false,
-    remarks: "",
-  });
+
   const [validData, setValidData] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -143,8 +143,6 @@ function ProductionForm({ categories, zeroInventory, moveToProduction }) {
     setValidData(valid);
   };
 
-
-
   // Run validation whenever formData changes
   useEffect(() => {
     console.log(formData);
@@ -182,14 +180,6 @@ function ProductionForm({ categories, zeroInventory, moveToProduction }) {
                 // Fetch the next serial code
                 const serialResponse = await fetchNextSerialCode(newValue.name);
                 const serialCode = serialResponse?.data || "";
-
-                // Fetch subcategories for the selected category
-                const subCategoryResponse = await fetchSubCategoriesForCategory(
-                  newValue.id
-                );
-                const fetchedSubCategories = subCategoryResponse?.data || [];
-
-                setSubCategories(fetchedSubCategories);
 
                 // Update form state
                 setFormData({

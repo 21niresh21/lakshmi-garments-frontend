@@ -23,9 +23,12 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 import InsightsIcon from "@mui/icons-material/Insights";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
-import SettingsIcon from '@mui/icons-material/Settings';
-import ConstructionIcon from '@mui/icons-material/Construction';
+import SettingsIcon from "@mui/icons-material/Settings";
+import ConstructionIcon from "@mui/icons-material/Construction";
 import { Link, useLocation } from "react-router";
+import MoneyIcon from "@mui/icons-material/Money";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { ROLES } from "../constants/roles";
 
 const drawerWidth = 240;
 
@@ -71,6 +74,13 @@ const Drawer = styled(MuiDrawer, {
 }));
 
 const SIDEBAR_ITEMS = [
+  {
+    icon: <LogoutIcon />,
+    label: "Logout",
+    index: 0,
+    link: "/login",
+    allowFor: [ROLES.SUPER_ADMIN, ROLES.ACCOUNTS_ADMIN, ROLES.PRODUCTION_ADMIN],
+  },
   { isSubHeader: true, label: "Main" },
   {
     icon: <DashboardIcon />,
@@ -87,37 +97,44 @@ const SIDEBAR_ITEMS = [
   //   index: 2,
   //   link: "/analytics",
   // },
-  { isSubHeader: true, label: "User Management" },
+  { isSubHeader: true, label: "User Management", allowFor: [ROLES.SUPER_ADMIN], },
   {
     icon: <PeopleIcon />,
     label: "Users",
     last: true,
     index: 3,
     link: "/users",
+    allowFor: [ROLES.SUPER_ADMIN],
   },
-  { isSubHeader: true, label: "Inventory Management" },
   {
-    icon: (
-      <Icon>
-        <span className="material-symbols-outlined">package_2</span>
-      </Icon>
-    ),
-    label: "Inventory",
-    index: 4,
-    link: "/stock",
+    isSubHeader: true,
+    label: "Inventory Management",
+    allowFor: [ROLES.SUPER_ADMIN, ROLES.ACCOUNTS_ADMIN],
   },
+  // {
+  //   icon: (
+  //     <Icon>
+  //       <span className="material-symbols-outlined">package_2</span>
+  //     </Icon>
+  //   ),
+  //   label: "Inventory",
+  //   index: 4,
+  //   link: "/stock",
+  // },
   {
     icon: <InventoryOutlinedIcon />,
     label: "Add Inventory",
     index: 5,
     link: "/stock-control",
+    allowFor: [ROLES.ACCOUNTS_ADMIN, ROLES.SUPER_ADMIN],
   },
   {
     icon: <ReceiptLongIcon />,
     label: "Invoice",
     index: 6,
     link: "/invoice",
-    last  : true,
+    last: true,
+    allowFor: [ROLES.ACCOUNTS_ADMIN, ROLES.SUPER_ADMIN],
   },
   { isSubHeader: true, label: "Production" },
   {
@@ -140,16 +157,29 @@ const SIDEBAR_ITEMS = [
     index: 9,
     link: "/jobwork",
   },
-  { isSubHeader: true, label: "Master Data" },
+  {
+    icon: <MoneyIcon />,
+    label: "Pay Day",
+    index: 10,
+    link: "/pay-day",
+  },
+  {
+    isSubHeader: true,
+    label: "Master Data",
+    allowFor: [ROLES.SUPER_ADMIN, ROLES.ACCOUNTS_ADMIN, ROLES.PRODUCTION_ADMIN],
+  },
   {
     icon: <SettingsIcon />,
     label: "Data Management",
-    index: 10,
+    index: 11,
     link: "/data-management",
-  }
+    allowFor: [ROLES.SUPER_ADMIN, ROLES.ACCOUNTS_ADMIN, ROLES.PRODUCTION_ADMIN],
+  },
 ];
 
 function SideBar() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  console.log(user);
   const location = useLocation();
   const [selectedIndex, setSelectedIndex] = useState(() => {
     // Find the sidebar item whose link matches the current path
@@ -163,22 +193,15 @@ function SideBar() {
     setSelectedIndex(index);
   };
 
-  const [open, setOpen] = useState(true);
-  const [loggedIn, setLoggedIn] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const handleToggle = () => {
     setOpen(!open);
   };
 
-  // useEffect(() => {
-  //   if (!localStorage.getItem("user")) {
-  //     setLoggedIn(false);
-  //   }
-  // }, [loggedIn]);
-
   return (
     <>
-      {loggedIn && (
+      {localStorage.getItem("user") && location.pathname !== "/login" && (
         <Drawer variant="permanent" open={open}>
           <DrawerHeader>
             <Typography variant="h6" onClick={handleToggle}>
@@ -193,30 +216,45 @@ function SideBar() {
           <List>
             {SIDEBAR_ITEMS.map((item, index) =>
               item.isSubHeader ? (
-                <Collapse in={open} timeout="auto" unmountOnExit key={index}>
-                  <ListSubheader sx={{ lineHeight: 2 }}>
-                    {item.label}
-                  </ListSubheader>
-                </Collapse>
+                item.allowFor &&
+                item.allowFor.indexOf(user.role.name) !== -1 && (
+                  <Collapse in={open} timeout="auto" unmountOnExit key={index}>
+                    <ListSubheader sx={{ lineHeight: 2 }}>
+                      {item.label}
+                    </ListSubheader>
+                  </Collapse>
+                )
               ) : (
                 <>
-                  <Tooltip title={item.label} placement="right" key={index}>
-                    <StyledLink to={item.link} key={index}>
-                      <ListItem disableGutters disablePadding>
-                        <ListItemButton
-                          selected={selectedIndex === item.index}
-                          onClick={(event) =>
-                            handleListItemClick(event, item.index)
-                          }
-                          sx={{ mr: 1, ml: 1, borderRadius: 2, minHeight: 50 }}
-                        >
-                          <ListItemIcon>{item.icon}</ListItemIcon>
-                          {open && <ListItemText>{item.label}</ListItemText>}
-                        </ListItemButton>
-                      </ListItem>
-                    </StyledLink>
-                  </Tooltip>
-                  {item.last && <Divider sx={{ m: 1 }} key={item.label} />}
+                  {item.allowFor &&
+                    item.allowFor.indexOf(user.role.name) !== -1 && (
+                      <Tooltip title={item.label} placement="right" key={index}>
+                        <StyledLink to={item.link} key={index}>
+                          <ListItem disableGutters disablePadding>
+                            <ListItemButton
+                              selected={selectedIndex === item.index}
+                              onClick={(event) =>
+                                handleListItemClick(event, item.index)
+                              }
+                              sx={{
+                                mr: 1,
+                                ml: 1,
+                                borderRadius: 2,
+                                minHeight: 50,
+                              }}
+                            >
+                              <ListItemIcon>{item.icon}</ListItemIcon>
+                              {open && (
+                                <ListItemText>{item.label}</ListItemText>
+                              )}
+                            </ListItemButton>
+                          </ListItem>
+                        </StyledLink>
+                      </Tooltip>
+                    )}
+                  {item.allowFor &&
+                    item.allowFor.indexOf(user.role.name) !== -1 &&
+                    item.last && <Divider sx={{ m: 1 }} key={item.label} />}
                 </>
               )
             )}

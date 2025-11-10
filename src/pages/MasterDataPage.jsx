@@ -54,7 +54,7 @@ export default function MasterDataPage() {
 
         <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2 }}>
           <Tabs value={tab} onChange={(_, newValue) => setTab(newValue)}>
-            <Tab label="Forms" />
+            <Tab label="Add" />
             <Tab label="Suppliers" />
             <Tab label="Transport" />
             <Tab label="Category" />
